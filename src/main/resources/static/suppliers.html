@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Willowton | Supplier Registry</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h2 style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">Willowton</h2>
+        <ul class="nav-links">
+            <li class="nav-item" onclick="location.href='procurement_dashboard.html'">
+                <i class="fas fa-chart-line"></i> <span>Operations Room</span>
+        </ul>
+    </div>
+
+    <main class="content-area">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <h1 style="color: var(--primary);">Supplier Registry</h1>
+                <p style="color: var(--text-muted);">Master list of approved Willowton partners & Tax Compliance.</p>
+            </div>
+            <div class="user-controls" style="display: flex; align-items: center; gap: 15px;">
+                <div style="text-align: right; margin-right: 10px;">
+                    <span id="user-display-name" style="display: block; font-weight: 700; color: var(--primary);">M. Kabamba</span>
+                    <small style="color: var(--success); font-weight: 600;">Authorized Officer</small>
+                </div>
+                <button class="btn-primary" onclick="openSupplierModal()"><i class="fas fa-plus"></i> ONBOARD SUPPLIER</button>
+            </div>
+        </header>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+            <div class="card" style="border-top: 4px solid var(--primary);">
+                <small style="text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Vendors</small>
+                <p id="active-suppliers-count" style="font-size: 2.2rem; font-weight: 800; margin-top: 5px;">0</p>
+            </div>
+            <div class="card" style="border-top: 4px solid var(--warning);">
+                <small style="text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Tax Expiring (30d)</small>
+                <p style="font-size: 2.2rem; font-weight: 800; margin-top: 5px; color: var(--warning);">0</p>
+            </div>
+            <div class="card" style="border-top: 4px solid var(--accent);">
+                <small style="text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Registry Status</small>
+                <p style="font-size: 1.5rem; font-weight: 800; margin-top: 15px; color: var(--success);"><i class="fas fa-shield-alt"></i> ENCRYPTED</p>
+            </div>
+        </div>
+
+        <section class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                <h2 style="font-size: 1.1rem; color: var(--primary);">Verified Vendor List</h2>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="supplierSearch" placeholder="Search Company or TPIN..." style="width: 300px; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+                    <button class="btn-secondary" onclick="loadSuppliers()"><i class="fas fa-sync"></i></button>
+                </div>
+            </div>
+            <table>
+                <thead>
+    <tr>
+        <th>Company Information</th>
+        <th>Category</th>
+        <th>TPIN / Tax ID</th>
+        <th>Contact Person</th>
+        <th>Phone Number</th> <th>Status</th>
+        <th style="text-align: right;">Action</th>
+    </tr>
+</thead>
+                <tbody id="supplier-grid-body"></tbody>
+            </table>
+        </section>
+    </main>
+
+    <div id="supplierModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-btn" onclick="closeSupplierModal()">&times;</span>
+            <h2 style="color: var(--primary);"><i class="fas fa-university"></i> Vendor Onboarding</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Ensure all TPIN details match ZRA certificates.</p>
+            <form id="supplierForm">
+    <form id="supplierForm">
+    <div class="form-group">
+        <label>Company Legal Name</label>
+        <input type="text" id="compName" placeholder="e.g. Lusaka Logistics Ltd" required>
+    </div>
+    
+    <div class="form-row">
+        <div class="form-group">
+            <label>Category</label>
+            <select id="compCategory">
+                <option value="Raw Materials">Raw Materials</option>
+                <option value="Packaging">Packaging</option>
+                <option value="Office Supplies">Office Supplies</option>
+                <option value="IT Services">IT Services</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Contact Person Name</label>
+            <input type="text" id="compContact" placeholder="e.g. John Phiri" required>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group">
+            <label>TPIN (Tax ID)</label>
+            <input type="text" id="compTpin" placeholder="100XXXXXXXX" maxlength="10" required>
+        </div>
+        <div class="form-group">
+            <label>Contact Email</label>
+            <input type="email" id="compEmail" required>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Phone Number</label>
+        <input type="text" id="compPhone" placeholder="+260..." required>
+    </div>
+
+    <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="closeSupplierModal()">Cancel</button>
+        <button type="submit" class="btn-primary">Register & Verify</button>
+    </div>
+</form>
+        </div>
+    </div>
+
+    <div id="viewSupplierModal" class="modal">
+        <div class="modal-content" style="max-width: 450px; border-left: 5px solid var(--primary);">
+            <span class="close-btn" onclick="closeViewModal()">&times;</span>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <i class="fas fa-id-badge" style="font-size: 3rem; color: var(--primary); margin-bottom: 10px;"></i>
+                <h2 id="viewCompName" style="color: var(--primary); margin: 0;"></h2>
+                <span class="status-pill status-approved">VERIFIED PARTNER</span>
+            </div>
+           <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+    <p><strong>TPIN:</strong> <span id="viewTaxId"></span></p>
+    <p><strong>Category:</strong> <span id="viewCategory"></span></p>
+    <p><strong>Email:</strong> <span id="viewEmail"></span></p>
+    <p><strong>Phone:</strong> <span id="viewPhone"></span></p> 
+    <p><strong>Compliance:</strong> <span style="color:var(--success)">Tax Compliant</span></p>
+</div>
+            <button class="btn-secondary" style="width: 100%; margin-top: 20px;" onclick="closeViewModal()">Close Profile</button>
+        </div>
+    </div>
+
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <i class="fas fa-exclamation-circle" style="font-size: 3.5rem; color: var(--danger); margin-bottom: 15px;"></i>
+            <h2 style="color: var(--primary);">Confirm Removal</h2>
+            <p>Remove <strong id="deleteTargetName"></strong> from the Willowton Registry?</p>
+            <input type="hidden" id="deleteTargetId">
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button class="btn-secondary" style="flex: 1;" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn-primary" id="finalDeleteBtn" style="flex: 1; background: var(--danger);" onclick="executeDelete()">Yes, Remove</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/suppliers.js"></script>
+</body>
+</html>

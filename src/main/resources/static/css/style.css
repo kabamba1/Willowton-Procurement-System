@@ -1,0 +1,462 @@
+/* WILLOWTON PROCUREMENT SYSTEM - MASTER STYLESHEET
+    Modules: Operations Room, Purchase Orders, Vendor Registry, Stock Catalog
+*/
+
+/* --- 1. VARIABLES & RESET --- */
+:root {
+    --primary: #0f172a;    /* Deep Navy */
+    --accent: #3b82f6;     /* Willowton Blue */
+    --success: #22c55e;    /* Approved / In Stock */
+    --warning: #f59e0b;    /* Pending */
+    --danger: #ef4444;     /* Rejected / Low Stock */
+    --bg-gray: #f8fafc;
+    --white: #ffffff;
+    --text-dark: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+* { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+}
+
+body { 
+    font-family: 'Inter', -apple-system, sans-serif; 
+    background: var(--bg-gray); 
+    color: var(--text-dark);
+    display: flex;
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.5;
+}
+
+/* --- 2. SIDEBAR NAVIGATION --- */
+.sidebar {
+    width: 260px;
+    background: var(--primary);
+    color: white;
+    padding: 2rem 1rem;
+    position: fixed;
+    height: 100vh;
+    z-index: 100;
+}
+
+.sidebar h2 { 
+    font-size: 1.2rem; 
+    margin-bottom: 2.5rem; 
+    text-align: center; 
+    color: var(--accent);
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.nav-links { list-style: none; }
+
+.nav-item { 
+    padding: 0.8rem 1rem; 
+    margin-bottom: 0.5rem; 
+    border-radius: 8px; 
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%; 
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.nav-item i {
+    width: 20px; 
+    text-align: center;
+}
+
+.nav-item:hover { 
+    background: rgba(255, 255, 255, 0.1); 
+    color: white; 
+}
+
+.nav-item.active {
+    color: white;
+    font-weight: 600;
+}
+
+/* --- 3. MAIN CONTENT AREA --- */
+.content-area {
+    margin-left: 260px; 
+    flex: 1;
+    padding: 2.5rem;
+    width: calc(100% - 260px);
+}
+
+.card {
+    background: var(--white);
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
+}
+
+/* --- 4. DATA TABLE --- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    text-align: left;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+    padding: 12px 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+}
+
+td {
+    padding: 15px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+    vertical-align: middle;
+}
+
+tr:hover td {
+    background-color: #fbfcfe;
+}
+
+/* --- 5. BADGES & PILLS --- */
+.status-pill {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+/* Status variants */
+.status-active, .status-verified, .status-approved { background: #dcfce7; color: #166534; }
+.status-pending { background: #fef9c3; color: #854d0e; }
+.status-inactive, .status-rejected { background: #fee2e2; color: #991b1b; }
+
+/* Category-specific pills for Stock Catalog */
+.category-pill {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+}
+
+.cat-raw-materials { background: #ecfdf5; color: #059669; border-color: #10b981; }
+.cat-packaging { background: #fffbeb; color: #d97706; border-color: #f59e0b; }
+.cat-chemicals { background: #eff6ff; color: #2563eb; border-color: #3b82f6; }
+
+/* SKU Code tag */
+code {
+    background: #f1f5f9;
+    padding: 3px 8px;
+    border-radius: 4px;
+    color: var(--primary);
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-weight: 700;
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+}
+
+/* --- 6. MODAL SYSTEM --- */
+.modal {
+    display: none; 
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(4px);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 2rem;
+    width: 95%;
+    max-width: 550px;
+    border-radius: 16px;
+    position: relative;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.close-btn {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.close-btn:hover { color: var(--danger); }
+
+/* --- 7. FORMS & INPUTS --- */
+.form-group {
+    margin-bottom: 1.25rem; 
+    display: flex;
+    flex-direction: column;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+    width: 100%;
+}
+
+.form-row .form-group { flex: 1; }
+
+.form-group label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Targets all inputs across all forms */
+input, select, textarea {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    background: var(--white);
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.modal-actions {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border); 
+    display: flex;
+    justify-content: flex-end; 
+    gap: 12px;
+}
+
+/* --- 8. BUTTONS --- */
+.btn-primary {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: transform 0.1s, opacity 0.2s;
+}
+
+.btn-secondary {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid var(--border);
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-primary:active { transform: scale(0.98); }
+
+.btn-icon {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.btn-icon:hover { background: #f1f5f9; }
+
+/* --- 9. SPECIAL LAYOUTS (Operations Room/Review) --- */
+.review-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin: 15px 0;
+    padding: 15px;
+    background: var(--bg-gray);
+    border-radius: 8px;
+}
+
+.review-item strong {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+
+/* --- 10. RESPONSIVE --- */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding: 1rem;
+    }
+
+    .content-area {
+        margin-left: 0;
+        width: 100%;
+        padding: 1.25rem;
+    }
+
+    .nav-links {
+        display: flex;
+        overflow-x: auto;
+        gap: 10px;
+        padding-bottom: 5px;
+    }
+
+    .nav-item { 
+        width: auto; 
+        white-space: nowrap; 
+        padding: 0.5rem 1rem;
+    }
+
+    .form-row { flex-direction: column; gap: 0; }
+}
+
+.btn-approve {
+    background: #2ecc71;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-approve:hover { background: #27ae60; }
+
+.btn-reject {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-reject:hover { background: #c0392b; }
+
+@media print {
+    .sidebar, .user-controls, .btn-icon, .btn-secondary {
+        display: none !important;
+    }
+    .content-area {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 0 !important;
+    }
+    .card {
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+    }
+    body {
+        background: white !important;
+    }
+}
+
+#fiscalArchiveBody {
+    display: block;
+    max-height: 400px;
+    overflow-y: auto;
+}
+.archive-scroll-container {
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.status-approved {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+/* Layout for side-by-side inputs */
+.form-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.form-row .form-group {
+    flex: 1; /* Makes both inputs take equal width */
+}
+
+/* Specific button color for "Success" actions */
+.btn-primary-success {
+    background: #10b981; /* Professional Emerald Green */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    flex: 2;
+    transition: background 0.2s;
+}
+
+.btn-primary-success:hover {
+    background: #059669;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 25px;
+}
+.badge {
+    text-transform: capitalize; /* Turns FINANCE_MANAGER into Finance_manager */
+    letter-spacing: 0.3px;
+}
+select {
+    text-transform: lowercase;
+}
+select option {
+    text-transform: capitalize; /* Turns 'FINANCE_MANAGER' into 'Finance_manager' */
+}

@@ -1,0 +1,31 @@
+<main class="content">
+    <header>
+        <div>
+            <h1>Items Catalog</h1>
+            <p style="color: #64748b;">Manage raw materials, packaging, and chemical inventory.</p>
+        </div>
+        <button class="btn-primary">+ Add New Item SKU</button>
+    </header>
+
+    <div class="table-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin:0;">Standard Inventory Items</h2>
+            <input type="text" id="catalogSearch" placeholder="Search by Code or Description..." style="width: 300px; margin: 0;">
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Item Code</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Unit of Measure</th>
+                    <th>Last Price (ZMW)</th>
+                    <th>Stock Level</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="catalog-body">
+                </tbody>
+        </table>
+    </div>
+</main>

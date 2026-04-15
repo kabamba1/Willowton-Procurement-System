@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplier Registry | Willowton PMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header"><h2>Willowton</h2></div>
+        <ul class="nav-links">
+            <li class="nav-item" onclick="location.href='warehouse_dashboard.html'">
+                <i class="fas fa-boxes"></i> <span>Stock Inventory</span>
+            </li>
+    </div>
+
+    <main class="content-area">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <h1 style="color: var(--primary);">Supplier Registry</h1>
+                <p style="color: var(--text-muted);">Contact directory for active Willowton vendors.</p>
+            </div>
+
+            <div class="user-controls" style="display: flex; align-items: center; gap: 15px;">
+                <div style="text-align: right;">
+                    <span id="user-display-name" style="font-weight: 700; color: var(--primary);">Loading...</span>
+                    <small id="user-role-label" class="status-pill status-verified" style="display: block; font-size: 0.65rem;">Role</small>
+                </div>
+                <button onclick="logout()" class="btn-icon" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <section class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.1rem; color: var(--primary);">Active Vendors</h2>
+                <div class="search-box">
+                    <input type="text" id="supSearch" onkeyup="filterSuppliers()" placeholder="Search suppliers or categories..." style="min-width: 300px; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Supplier Name</th>
+                        <th>Category</th>
+                        <th>Contact Person</th>
+                        <th>Phone Number</th>
+                        <th>Email Address</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="supplier-table-body">
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <i class="fas fa-spinner fa-spin"></i> Loading Contact Directory...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/warehouse_suppliers.js"></script>
+</body>
+</html>

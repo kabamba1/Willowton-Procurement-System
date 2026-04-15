@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Audit Trail | Willowton PMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="sidebar">
+        <h2>Willowton</h2>
+        <ul class="nav-links">
+            <li class="nav-item active" onclick="location.href='manager_dashboard.html'">
+            <i class="fas fa-file-invoice-dollar"></i> <span>Financial Room</span>
+        </li>
+        </ul>
+    </nav>
+
+    <main class="content-area">
+        <header style="margin-bottom: 2rem;">
+            <h1 style="color: var(--primary);">System Audit Trail</h1>
+            <p style="color: var(--text-muted);">Historical record of all authorized and rejected procurement requests.</p>
+        </header>
+
+        <section class="card">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                <input type="text" id="auditSearch" placeholder="Search by PO#, Supplier, or Manager..." style="width: 300px;">
+                <button class="btn-secondary" onclick="window.print()"><i class="fas fa-print"></i> Print Audit Log</button>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>PO #</th>
+                        <th>Supplier</th>
+                        <th>Amount</th>
+                        <th>Decision</th>
+                        <th>Manager Notes</th>
+                    </tr>
+                </thead>
+                <tbody id="audit-table-body">
+                    </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="js/history.js"></script>
+</body>
+</html>

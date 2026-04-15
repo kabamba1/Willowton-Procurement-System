@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Inventory | Willowton PMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Willowton</h2>
+        </div>
+        <ul class="nav-links">
+            <li class="nav-item active">
+                <i class="fas fa-boxes"></i> <span>Stock Inventory</span>
+            </li>
+            <li class="nav-item" onclick="location.href='stock_movements.html'">
+                <i class="fas fa-exchange-alt"></i> <span>Stock Movements</span>
+            </li>
+            <li class="nav-item" onclick="location.href='warehouse_suppliers.html'">
+                <i class="fas fa-truck-loading"></i> <span>Supplier Registry</span>
+            </li>
+        </ul>
+    </div>
+
+    <main class="content-area">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <h1 style="color: var(--primary);">Warehouse Inventory</h1>
+                <p style="color: var(--text-muted);">Asset management and real-time stock monitoring.</p>
+            </div>
+
+            <div class="user-controls" style="display: flex; align-items: center; gap: 15px;">
+                <div style="text-align: right;">
+                    <span id="user-display-name" style="font-weight: 700; color: var(--primary);">Loading...</span>
+                    <small id="user-role-label" class="status-pill status-verified" style="display: block; font-size: 0.65rem;">Role</small>
+                </div>
+                <button onclick="logout()" class="btn-icon" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 2rem;">
+            <div class="card" style="border-left: 5px solid var(--accent);">
+                <small style="color: var(--text-muted); font-weight: 700;">TOTAL ITEMS</small>
+                <p id="total-sku-count" style="font-size: 1.8rem; font-weight: 800; margin-top: 5px;">0</p>
+            </div>
+            <div class="card" style="border-left: 5px solid var(--danger);">
+                <small style="color: var(--text-muted); font-weight: 700;">LOW STOCK</small>
+                <p id="low-stock-count" style="font-size: 1.8rem; font-weight: 800; margin-top: 5px; color: var(--danger);">0</p>
+            </div>
+            <div class="card" style="border-left: 5px solid var(--success);">
+                <small style="color: var(--text-muted); font-weight: 700;">VALUATION</small>
+                <p id="stock-valuation" style="font-size: 1.8rem; font-weight: 800; margin-top: 5px; color: var(--success);">K 0.00</p>
+            </div>
+        </div>
+
+        <section class="card" style="margin-bottom: 2rem; border-top: 4px solid var(--accent);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.1rem; color: var(--primary);">
+            <i class="fas fa-truck-loading"></i> Expected Deliveries
+        </h2>
+        <small class="status-pill status-verified">Pending Physical Receipt</small>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>PO Reference</th>
+                <th>Item & Description</th>
+                <th>Ordered Qty</th>
+                <th>Supplier</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="expected-deliveries-body">
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                    Waiting for approved orders from Finance...
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+        <section class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.1rem; color: var(--primary);">Stock Catalog</h2>
+                <div style="display: flex; gap: 10px;">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="inventorySearch" onkeyup="filterInventory()" placeholder="Search catalog..." style="max-width: 250px; padding-left: 30px;">
+                    </div>
+                    <button class="btn-primary" onclick="window.print()">
+                        <i class="fas fa-file-export"></i> Report
+                    </button>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item Description</th>
+                        <th>Category</th>
+                        <th>Stock Level</th>
+                        <th>Unit Price</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="inventory-table-body">
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <i class="fas fa-spinner fa-spin"></i> Syncing with Willowton Database...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/warehouse.js"></script>
+</body>
+</html>

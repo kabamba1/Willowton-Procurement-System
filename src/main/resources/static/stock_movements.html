@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Movements | Willowton PMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header"><h2>Willowton</h2></div>
+        <ul class="nav-links">
+            <li class="nav-item" onclick="location.href='warehouse_dashboard.html'">
+                <i class="fas fa-boxes"></i> <span>Stock Inventory</span>
+            </li>
+            <li class="nav-item active">
+                <i class="fas fa-exchange-alt"></i> <span>Stock Movements</span>
+            </li>
+            <li class="nav-item" onclick="location.href='warehouse_suppliers.html'">
+                <i class="fas fa-truck-loading"></i> <span>Supplier Registry</span>
+            </li>
+        </ul>
+    </div>
+
+    <main class="content-area">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <h1 style="color: var(--primary);">Stock Movements</h1>
+                <p style="color: var(--text-muted);">Audit log of all inventory inflows and outflows.</p>
+            </div>
+            <div class="user-controls" style="display: flex; align-items: center; gap: 15px;">
+                <div style="text-align: right;">
+                    <span id="user-display-name" style="font-weight: 700; color: var(--primary);">Loading...</span>
+                    <small id="user-role-label" class="status-pill status-verified" style="display: block; font-size: 0.65rem;">Role</small>
+                </div>
+                <button onclick="logout()" class="btn-icon"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </header>
+
+        <section class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.1rem; color: var(--primary);">Movement History</h2>
+                <button class="btn-primary" onclick="window.print()">
+                    <i class="fas fa-print"></i> Print Audit Log
+                </button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Item Description</th>
+                        <th>Type</th>
+                        <th>Quantity</th>
+                        <th>Reference / PO</th>
+                        <th>Handled By</th>
+                    </tr>
+                </thead>
+                <tbody id="movements-table-body">
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <i class="fas fa-spinner fa-spin"></i> Fetching audit logs...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/stock_movements.js"></script>
+</body>
+</html>

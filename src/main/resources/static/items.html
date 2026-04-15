@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Willowton | Stock Catalog</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <nav class="sidebar">
+        <h2>WILLOWTON</h2>
+        <ul class="nav-links">
+            <li class="nav-item" onclick="location.href='procurement_dashboard.html'">
+                <i class="fas fa-chart-line"></i> <span>Operations Room</span>
+            </li>
+        </ul>
+    </nav>
+
+    <main class="content-area">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <h1>Items Catalog</h1>
+                <p class="text-muted">Manage raw materials, packaging and chemical inventory.</p>
+            </div>
+            <button class="btn-primary" onclick="openItemModal()">
+                <i class="fas fa-plus"></i> Add New Item SKU
+            </button>
+        </header>
+
+        <div style="display: flex; gap: 15px; margin-bottom: 25px;">
+            <input type="text" id="itemSearch" placeholder="Search SKU or Description..." style="flex: 2;">
+            <select id="categoryFilter" style="flex: 1;">
+                <option value="ALL">All Categories</option>
+                <option value="Raw Materials">Raw Materials</option>
+                <option value="Packaging">Packaging</option>
+                <option value="Chemicals">Chemicals</option>
+            </select>
+        </div>
+
+        <section class="card">
+            <h3 style="margin-bottom: 20px;">Standard Inventory Items</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item Code</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>UOM</th>
+                        <th>Last Price (ZMW)</th>
+                        <th>Stock Level</th>
+                        <th>Status</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="items-table-body">
+                    </tbody>
+            </table>
+        </section>
+    </main>
+
+    <div id="itemModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeItemModal()">&times;</span>
+            
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Item SKU</h2>
+                <p class="text-muted" style="margin-bottom: 20px;">Willowton Inventory Management</p>
+            </div>
+
+            <form id="itemForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Item Code (SKU)</label>
+                        <input type="text" id="itemCode" placeholder="e.g., RW-101" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="category" required>
+                            <option value="Raw Materials">Raw Materials</option>
+                            <option value="Packaging">Packaging</option>
+                            <option value="Chemicals">Chemicals</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" id="description" placeholder="Full name of the material" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Unit of Measure</label>
+                        <select id="unitOfMeasure" required>
+                            <option value="KG">Kilograms (KG)</option>
+                            <option value="Liters">Liters (L)</option>
+                            <option value="Units">Units (Pcs)</option>
+                            <option value="Meters">Meters (M)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Initial Price (ZMW)</label>
+                        <input type="number" id="unitPrice" step="0.01" required placeholder="0.00">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Current Stock Level</label>
+                    <input type="number" id="stockLevel" min="0" required placeholder="0">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeItemModal()">Cancel</button>
+                    <button type="submit" class="btn-primary" id="submitBtn">Save SKU to Catalog</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="modal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <h3 id="deleteTitle" style="color: var(--danger);">Confirm Removal</h3>
+        <p id="deleteMessage" style="margin: 20px 0; line-height: 1.5;"></p>
+        <div class="modal-actions" style="justify-content: center; gap: 10px;">
+            <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+            <button class="btn-primary" id="confirmDeleteBtn" style="background: var(--danger);">Yes, Remove</button>
+        </div>
+    </div>
+</div>
+
+    <script src="js/config.js"></script>
+    <script src="js/items.js"></script>
+</body>
+</html>

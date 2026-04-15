@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Budget Control | Willowton PMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="sidebar">
+        <h2>Willowton</h2>
+        <ul class="nav-links">
+            <li class="nav-item" onclick="location.href='manager_dashboard.html'">
+                <i class="fas fa-file-invoice-dollar"></i> <span>Financial Room</span>
+            </li>
+        </ul>
+    </nav>
+
+    <main class="content-area">
+        <header style="margin-bottom: 2rem;">
+            <h1 style="color: var(--primary);">Budget Management</h1>
+            <p style="color: var(--text-muted);">Set monthly expenditure limits and monitor utilization.</p>
+        </header>
+
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 25px; margin-bottom: 2rem;">
+            
+            <section class="card">
+                <h3 style="margin-bottom: 1.5rem; color: var(--primary);">Update Monthly Limit</h3>
+                <div class="form-group">
+                    <label id="current-period-label">Current Month (April 2026)</label>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <span style="position: absolute; left: 10px; font-weight: bold; color: var(--text-muted);">K</span>
+                        <input type="number" id="monthlyLimitInput" placeholder="0.00" style="font-size: 1.2rem; font-weight: 700; padding-left: 30px;">
+                    </div>
+                </div>
+                <button class="btn-primary" style="width: 100%;" onclick="saveBudget()">
+                    <i class="fas fa-save"></i> UPDATE LIMIT
+                </button>
+                <div style="margin-top: 15px; font-size: 0.8rem; color: var(--text-muted);">
+                    <i class="fas fa-info-circle"></i> This limit affects calculations across all management dashboards.
+                </div>
+            </section>
+
+            <section class="card">
+                <h3 style="margin-bottom: 1.5rem; color: var(--primary);">Live Budget Status</h3>
+                <div style="background: var(--bg-gray); padding: 20px; border-radius: 12px; text-align: center;">
+                    <small style="text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Available Spend Remaining</small>
+                    <h2 id="remainingValue" style="font-size: 2.5rem; color: var(--success); margin: 10px 0;">ZMW 0.00</h2>
+                    
+                    <div style="width: 100%; background: #ddd; height: 12px; border-radius: 10px; overflow: hidden; margin: 15px 0;">
+                        <div id="budgetProgressBar" style="width: 0%; background: var(--accent); height: 100%; transition: width 0.5s ease;"></div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.9rem;">
+                        <span id="spentLabel" style="color: var(--text-dark);">Spent: ZMW 0.00</span>
+                        <span id="limitLabel" style="color: var(--text-muted);">Limit: ZMW 0.00</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <section class="card">
+            <h3 style="color: var(--primary); margin-bottom: 1.5rem;">
+            <i class="fas fa-archive"></i> Fiscal Year Archive (<span id="archiveYearDisplay">2026</span>)
+            </h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Budget Limit</th>
+                        <th>Actual Spent</th>
+                        <th>Remaining / Variance</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="fiscalArchiveBody">
+                    </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="js/budget.js"></script>
+</body>
+</html>
