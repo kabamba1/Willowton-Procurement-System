@@ -1,3 +1,8 @@
+/** * --- WILLOWTON AUTHENTICATION LOGIC --- 
+ * Handles login submission and department-based routing.
+ * Dependency: config.js must be loaded first.
+ **/
+
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -6,50 +11,64 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
+    // UI Feedback: Start authentication
     btn.disabled = true;
-    btn.innerText = "Authenticating...";
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
     errorBox.style.display = 'none';
 
     try {
-        const response = await fetch(`${API_BASE}/auth/login`, {
+        // Now using API_BASE_URL from config.js which includes /api
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
         });
 
-     if (response.ok) {
+        if (response.ok) {
             const user = await response.json();
             
-            // Save the full user object (including roleId and fullName)
+            // Save the full user object to Session
             localStorage.setItem("currentUser", JSON.stringify(user));
             
-            // REDIRECT LOGIC MAPPED TO DATABASE: 1=Admin, 2=Proc, 3=Finance, 4=Whouse
-            if (user.roleId === 1) {
-                // Admin (Mwape)
-                window.location.href = "admin_dashboard.html"; 
-            } else if (user.roleId === 2) {
-                // Procurement Officer (Kabamba)
-                window.location.href = "procurement_dashboard.html";
-            } else if (user.roleId === 3) {
-                // Finance Manager (John Phiri)
-                window.location.href = "manager_dashboard.html";
-            } else if (user.roleId === 4) {
-                // Warehouse Manager (Sarah Banda)
-                window.location.href = "warehouse_dashboard.html";
-            } else {
-                // Default fallback
-                window.location.href = "login.html";
-                alert("Account configuration error. Please contact IT.");
+            /**
+             * REDIRECT LOGIC MAPPED TO DATABASE ROLES:
+             * 1 = Admin (Mwape IT Admin)
+             * 2 = Procurement Officer (M. Kabamba)
+             * 3 = Finance Manager (John Phiri)
+             * 4 = Warehouse Supervisor (Sarah Banda)
+             */
+            switch(user.roleId) {
+                case 1:
+                    window.location.href = "admin_dashboard.html"; 
+                    break;
+                case 2:
+                    window.location.href = "procurement_dashboard.html";
+                    break;
+                case 3:
+                    window.location.href = "manager_dashboard.html";
+                    break;
+                case 4:
+                    window.location.href = "warehouse_dashboard.html";
+                    break;
+                default:
+                    alert("Account configuration error. Please contact the IT Admin.");
+                    window.location.href = "login.html";
+                    break;
             }
         
         } else {
+            // Likely wrong credentials or user not found
             errorBox.style.display = 'block';
+            errorBox.innerText = "Invalid credentials. Please verify your username and password.";
             btn.disabled = false;
             btn.innerText = "Access System";
         }
     } catch (err) {
         console.error("Login Error:", err);
-        alert("Server connection failed. Check if Spring Boot is running.");
+        
+        // Handle Render's Free Tier "Cold Start"
+        alert("The Willowton Cloud is currently waking up. This usually takes about 60 seconds after a period of inactivity. Please try again shortly.");
+        
         btn.disabled = false;
         btn.innerText = "Access System";
     }

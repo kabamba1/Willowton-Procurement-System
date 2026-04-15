@@ -1,66 +1,88 @@
+/** * --- WILLOWTON WAREHOUSE AUDIT & MOVEMENT LOGIC --- 
+ * Provides a read-only historical ledger of physical stock changes.
+ * Dependencies: config.js and auth-session.js must be loaded first.
+ **/
+
 document.addEventListener('DOMContentLoaded', () => {
-    loadUserProfile();
-    loadMovementHistory(); // Use a consistent function name
+    // Shared display logic from auth-session.js
+    if (typeof displayUserName === 'function') displayUserName();
+    
+    loadMovementHistory(); 
 });
 
+/**
+ * 1. FETCH & RENDER MOVEMENT LEDGER
+ * Aggregates all stock "IN" (Receiving) and "OUT" (Dispatch/Usage) events.
+ */
 async function loadMovementHistory() {
-    // 1. Match the ID in your HTML exactly!
     const historyTable = document.getElementById('movements-table-body');
     if (!historyTable) return;
 
     try {
-        const res = await fetch(`${API_BASE}/warehouse/movements`); 
-        if (!res.ok) throw new Error("API Error");
+        // Pointing to the specific warehouse movement endpoint
+        const res = await fetch(`${API_BASE_URL}/warehouse/movements`); 
+        if (!res.ok) throw new Error("Registry Sync Failed");
         
         const movements = await res.json();
-        console.log("Verified Data from DB:", movements);
 
         if (!movements || movements.length === 0) {
-            historyTable.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">No movement history found.</td></tr>`;
+            historyTable.innerHTML = `<tr><td colspan="6" class="text-center p-4">No movement history found in the Willowton registry.</td></tr>`;
             return;
         }
 
-        historyTable.innerHTML = movements.map(m => {
-            // Flexible mapping for snake_case vs camelCase
-            const displayItem = m.item_description || m.itemDescription || m.itemName || "Unknown Item";
-            const displayType = m.movement_type || m.movementType || m.type || "IN";
+        // Show latest movements at the top (Audit Trail Standard)
+        historyTable.innerHTML = movements.reverse().map(m => {
+            // Flexible mapping for robust DB integration
+            const displayItem = m.item_description || m.itemDescription || m.itemName || "Unknown SKU";
+            const displayType = (m.movement_type || m.movementType || m.type || "IN").toUpperCase();
             const displayQty  = m.quantity || 0;
             const displayRef  = m.reference_number || m.referenceNumber || m.reference || "N/A";
-            const displayUser = m.handled_by || m.handledBy || m.userName || "System";
+            const displayUser = m.handled_by || m.handledBy || m.userName || "System Admin";
             const displayDate = m.timestamp ? new Date(m.timestamp).toLocaleString('en-GB') : "Recently";
+
+            // Logic to color-code the movement direction
+            const typeClass = displayType === 'IN' ? 'status-active' : 'status-inactive';
+            const iconClass = displayType === 'IN' ? 'fa-arrow-down-long text-success' : 'fa-arrow-up-long text-danger';
 
             return `
                 <tr>
-                    <td>${displayDate}</td>
+                    <td class="small text-muted">${displayDate}</td>
                     <td><strong>${displayItem}</strong></td>
                     <td>
-                        <span class="status-pill ${displayType === 'IN' ? 'status-approved' : 'status-rejected'}">
-                            ${displayType}
+                        <span class="status-pill ${typeClass}">
+                            <i class="fa-solid ${iconClass} me-1"></i> ${displayType}
                         </span>
                     </td>
-                    <td><strong>${displayQty}</strong></td>
-                    <td><code>${displayRef}</code></td>
-                    <td><i class="fas fa-user-check"></i> ${displayUser}</td>
+                    <td class="fw-bold">${displayQty}</td>
+                    <td><code class="text-primary">${displayRef}</code></td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user-check me-2 opacity-50"></i>
+                            <span class="small">${displayUser}</span>
+                        </div>
+                    </td>
                 </tr>
             `;
         }).join('');
 
     } catch (err) {
-        console.error("Audit Log Error:", err);
-        historyTable.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red; padding:20px;">
-            <i class="fas fa-exclamation-triangle"></i> Error connecting to database.
-        </td></tr>`;
+        console.error("Audit Log Sync Error:", err);
+        historyTable.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-danger p-4">
+                    <i class="fas fa-link-slash mb-2 d-block"></i>
+                    Cloud Registry Offline. Verify Willowton Render instance status.
+                </td>
+            </tr>`;
     }
 }
 
-function loadUserProfile() {
-    const user = JSON.parse(localStorage.getItem('currentUser'));
-    if (!user) return;
-    document.getElementById('user-display-name').innerText = user.fullName || user.full_name;
-    document.getElementById('user-role-label').innerText = "Warehouse Supervisor";
-}
-
+/**
+ * 2. SECURITY & SESSION MANAGEMENT
+ */
 function logout() {
-    localStorage.clear();
-    window.location.href = 'login.html';
+    if (confirm("Confirm sign-out from Willowton Warehouse Portal?")) {
+        localStorage.removeItem('currentUser');
+        window.location.href = 'index.html';
+    }
 }

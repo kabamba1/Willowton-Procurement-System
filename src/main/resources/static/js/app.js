@@ -1,15 +1,20 @@
-/** --- WILLOWTON AUTHENTICATION & SESSION MANAGEMENT --- **/
+/** * --- WILLOWTON AUTHENTICATION & SESSION MANAGEMENT --- 
+ * Note: config.js must be loaded BEFORE this file in your HTML.
+ **/
 
 document.addEventListener('DOMContentLoaded', () => {
     checkSession();
     displayUserContext(); 
 });
 
+/**
+ * 1. SESSION GUARD (RBAC)
+ */
 function checkSession() {
     const userJson = localStorage.getItem('currentUser');
     const path = window.location.pathname;
 
-    // 1. Lockdown: If no session and NOT on login page -> Send to Login
+    // Lockdown: No session and NOT on login page? Redirect.
     if (!userJson && !path.includes('login.html')) {
         window.location.href = 'login.html';
         return;
@@ -17,29 +22,21 @@ function checkSession() {
 
     if (userJson) {
         const user = JSON.parse(userJson);
-        
-        // 2. Role-Based Access Control (RBAC)
-        if (path.includes('manager_dashboard.html') && user.roleId !== 3) {
-            denyAccess(user.roleId);
-        }
+        const rid = user.roleId;
 
-        if (path.includes('procurement_dashboard.html') && user.roleId !== 2) {
-             denyAccess(user.roleId);
-        }
-
-        if (path.includes('admin_dashboard.html') && user.roleId !== 1) {
-             denyAccess(user.roleId);
-        }
-
-        // 3. Protect Warehouse Page (Role 4)
-        if (path.includes('warehouse_dashboard.html') && user.roleId !== 4) {
-             denyAccess(user.roleId);
-        }
+        // Ensure users stay in their authorized dashboard
+        if (path.includes('admin_dashboard.html') && rid !== 1) denyAccess(rid);
+        if (path.includes('procurement_dashboard.html') && rid !== 2) denyAccess(rid);
+        if (path.includes('manager_dashboard.html') && rid !== 3) denyAccess(rid);
+        if (path.includes('warehouse_dashboard.html') && rid !== 4) denyAccess(rid);
     }
 }
 
+/**
+ * 2. REDIRECT LOGIC
+ */
 function denyAccess(roleId) {
-    alert("Access Denied: You do not have permission to view this department.");
+    alert("Access Denied: Unauthorized department access.");
     redirectUserByRole(roleId);
 }
 
@@ -53,6 +50,9 @@ function redirectUserByRole(roleId) {
     window.location.href = routes[roleId] || 'login.html';
 }
 
+/**
+ * 3. UI CONTEXT (Header display)
+ */
 function displayUserContext() {
     const userJson = localStorage.getItem('currentUser');
     if (!userJson) return;
@@ -61,12 +61,10 @@ function displayUserContext() {
     const nameDisplay = document.getElementById('user-display-name');
     const roleDisplay = document.getElementById('user-role-label');
 
-    // Update Name
     if (nameDisplay) {
         nameDisplay.innerHTML = `<i class="fas fa-user-shield"></i> ${user.fullName}`;
     }
 
-    // Update Role Badge (Mapped to your Database role_name)
     if (roleDisplay) {
         const roles = {
             1: 'System Admin',
@@ -74,18 +72,23 @@ function displayUserContext() {
             3: 'Finance Manager',
             4: 'Warehouse Supervisor'
         };
-        roleDisplay.innerText = roles[user.roleId] || 'Staff';
+        roleDisplay.innerText = roles[user.roleId] || 'Staff Member';
     }
 }
 
-// Global Currency Formatter for ZMW
+/**
+ * 4. GLOBAL UTILITIES
+ */
+
+// Formatter for Zambian Kwacha (Used in Warehouse & Procurement)
 const formatZMW = (amount) => {
     return new Intl.NumberFormat('en-ZM', {
         style: 'currency',
         currency: 'ZMW'
-    }).format(amount);
+    }).format(amount || 0);
 };
 
+// Global Logout
 function logout() {
     if (confirm("Log out of Willowton PMS?")) {
         localStorage.clear();

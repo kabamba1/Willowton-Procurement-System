@@ -1,155 +1,173 @@
+/** * --- WILLOWTON FINANCE AUTHORIZATION LOGIC --- 
+ * Handles budget tracking and the Approval/Rejection workflow.
+ * Dependencies: config.js and auth-session.js must be loaded first.
+ **/
+
 document.addEventListener('DOMContentLoaded', () => {
     loadDashboardStats();
     loadPendingOrders();
 });
 
-// Alias for the HTML button
+// Refresh alias for the UI button
 function loadApprovals() {
     loadPendingOrders();
+    loadDashboardStats();
 }
 
-function logout() {
-    if (confirm("Are you sure you want to log out of the Willowton Finance Portal?")) {
-        // Clear session data
-        localStorage.removeItem('currentUser');
-        // If you saved anything else like 'token', clear it too
-        // localStorage.clear(); // Use this to wipe everything at once
-        
-        // Redirect to login
-        window.location.href = 'login.html';
-    }
-}
-
+/**
+ * 1. DASHBOARD ANALYTICS
+ * Updates Pending Value and Budget Utilization percentage.
+ */
 async function loadDashboardStats() {
     try {
-        const res = await fetch(`${API_BASE}/purchase_orders`);
-        const allOrders = await res.json();
+        // Points to: https://willowton-pms.onrender.com/api/purchase_orders
+        const res = await fetch(`${API_BASE_URL}/purchase_orders`);
+        if (!res.ok) throw new Error("Stats sync failed");
         
+        const allOrders = await res.json();
+        const now = new Date();
+        
+        // Calculate Pending Queue (Items needing John Phiri's attention)
         const pendingOrders = allOrders.filter(o => o.status === 'PENDING');
         const pendingValue = pendingOrders.reduce((sum, o) => sum + (parseFloat(o.totalAmount) || 0), 0);
         
-        // This pulls the dynamic limit we set in the Budget Room
+        // Budget Utilization Logic
         const monthlyLimit = parseFloat(localStorage.getItem('last_active_limit')) || 500000;
-        const totalSpent = allOrders.filter(o => o.status === 'APPROVED' || o.status === 'RECEIVED')
-                                    .reduce((sum, o) => sum + (parseFloat(o.totalAmount) || 0), 0);
-        const budgetPercent = Math.min(((totalSpent / monthlyLimit) * 100), 100).toFixed(0);
-
-        document.getElementById('pending-count').textContent = pendingOrders.length;
-        document.getElementById('pending-value').textContent = formatZMW(pendingValue);
         
-        // Target the 42% card
+        // Only sum orders from the CURRENT month for the % utilization card
+        const currentMonthSpent = allOrders.filter(o => {
+            const d = new Date(o.createdAt);
+            return (o.status === 'APPROVED' || o.status === 'RECEIVED') &&
+                   d.getMonth() === now.getMonth() &&
+                   d.getFullYear() === now.getFullYear();
+        }).reduce((sum, o) => sum + (parseFloat(o.totalAmount) || 0), 0);
+        
+        const budgetPercent = Math.min(((currentMonthSpent / monthlyLimit) * 100), 100).toFixed(0);
+
+        // UI Mapping
+        const countEl = document.getElementById('pending-count');
+        const valueEl = document.getElementById('pending-value');
         const budgetEl = document.getElementById('budget-percent');
+
+        if (countEl) countEl.textContent = pendingOrders.length;
+        if (valueEl) valueEl.textContent = formatZMW(pendingValue); // formatZMW from auth-session.js
+        
         if (budgetEl) {
             budgetEl.textContent = `${budgetPercent}%`;
-            // Visual warning if high
-            budgetEl.style.color = budgetPercent > 90 ? 'var(--danger)' : 'var(--primary)';
+            budgetEl.className = budgetPercent > 90 ? 'text-danger fw-bold' : 'text-primary';
         }
 
     } catch (err) {
-        console.error("Stats Error:", err);
+        console.error("Finance Analytics Error:", err);
     }
 }
 
-// 3. Fetch Table Rows
+/**
+ * 2. LOAD PENDING QUEUE
+ */
 async function loadPendingOrders() {
     const tableBody = document.getElementById('approval-table');
+    if (!tableBody) return;
     
     try {
-        const res = await fetch(`${API_BASE}/purchase_orders`);
+        const res = await fetch(`${API_BASE_URL}/purchase_orders`);
         const orders = await res.json();
         
-        // Ensure we only show PENDING items
         const pending = orders.filter(o => o.status && o.status.toUpperCase() === 'PENDING');
 
         if (pending.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">No pending authorizations found.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4">No pending authorizations in the queue.</td></tr>';
             return;
         }
 
-tableBody.innerHTML = pending.map(order => {
-    const categoryText = order.category || 'Operations';
-    const catClass = `cat-${categoryText.toLowerCase().replace(/\s+/g, '-')}`;
-    
-    // Safety check for status case
-    const currentStatus = (order.status || 'PENDING').toUpperCase();
-
-    return `
-        <tr>
-            <td><strong>${order.poNumber || 'TBD'}</strong></td>
-            <td>
-                <div style="font-weight: 600;">${order.creator?.fullName || 'M. Kabamba'}</div>
-                <small style="color: var(--text-muted);">Procurement Dept</small>
-            </td>
-            <td>
-                <span class="category-pill ${catClass}">${categoryText}</span>
-                <div style="font-size: 0.8rem; margin-top: 4px;">${order.supplier?.companyName || 'General Vendor'}</div>
-            </td>
-            <td style="font-weight: 700; color: var(--primary);">${formatZMW(order.totalAmount)}</td>
-            <td style="text-align: center;">
-                <button onclick="updateOrderStatus(${order.orderId}, 'APPROVED')" class="btn-approve" title="Approve">
-                    <i class="fas fa-check"></i>
-                </button>
-                <button onclick="updateOrderStatus(${order.orderId}, 'REJECTED')" class="btn-reject" style="margin-left:8px;" title="Reject">
-                    <i class="fas fa-times"></i>
-            </td>
-        </tr>
-    `;
-}).join('');
+        tableBody.innerHTML = pending.map(order => {
+            const categoryText = order.category || 'Operations';
+            const catClass = `cat-${categoryText.toLowerCase().replace(/\s+/g, '-')}`;
+            
+            return `
+                <tr>
+                    <td><strong>${order.poNumber || 'TBD'}</strong></td>
+                    <td>
+                        <div class="fw-bold">${order.creatorName || order.creator?.fullName || 'Procurement Officer'}</div>
+                        <small class="text-muted">Willowton Procurement</small>
+                    </td>
+                    <td>
+                        <span class="category-pill ${catClass}">${categoryText}</span>
+                        <div class="small mt-1">${order.supplierName || 'Unknown Vendor'}</div>
+                    </td>
+                    <td class="fw-bold text-primary">${formatZMW(order.totalAmount)}</td>
+                    <td class="text-center">
+                        <button onclick="updateOrderStatus(${order.orderId}, 'APPROVED')" class="btn-approve" title="Approve Expenditure">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button onclick="updateOrderStatus(${order.orderId}, 'REJECTED')" class="btn-reject ms-2" title="Reject with Reason">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     } catch (err) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Connection to Willowton Server Failed.</td></tr>';
+        console.error("Queue Load Error:", err);
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Lost connection to Finance Registry.</td></tr>';
     }
 }
 
-// 4. Handle Approval/Rejection
+/**
+ * 3. APPROVAL/REJECTION WORKFLOW
+ */
 async function updateOrderStatus(id, newStatus) {
     if (newStatus === 'REJECTED') {
-        // Open modal instead of instant update
-        document.getElementById('rejectOrderId').value = id;
+        const modalIdInput = document.getElementById('rejectOrderId');
+        if (modalIdInput) modalIdInput.value = id;
         document.getElementById('rejectionModal').style.display = 'flex';
         return;
     }
 
-    // Direct Approval logic
-    if (!confirm(`Authorize this expenditure?`)) return;
-    executeStatusUpdate(id, 'APPROVED', 'Authorized');
+    if (!confirm(`Authorize this K${id} expenditure?`)) return;
+    executeStatusUpdate(id, 'APPROVED', 'Authorized for procurement.');
 }
 
-// 2. Submit Rejection with Notes
 async function submitRejection() {
     const id = document.getElementById('rejectOrderId').value;
     const reason = document.getElementById('rejectionReason').value;
 
     if (!reason.trim()) {
-        alert("Please provide a reason for rejection.");
+        alert("A rejection reason is required for the audit trail.");
         return;
     }
 
     executeStatusUpdate(id, 'REJECTED', reason);
 }
 
-// 3. Central Update Execution
+/**
+ * 4. API EXECUTION
+ */
 async function executeStatusUpdate(id, status, notes) {
     try {
-        const res = await fetch(`${API_BASE}/purchase_orders/${id}/status`, {
+        const res = await fetch(`${API_BASE_URL}/purchase_orders/${id}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 status: status,
-                managerNotes: notes // This sends the reason to the DB
+                managerNotes: notes 
             })
         });
 
         if (res.ok) {
-            alert(`Order status updated: ${status}`);
+            alert(`Order successfully ${status.toLowerCase()}.`);
             location.reload();
+        } else {
+            alert("Authorization failed. Ensure server is reachable.");
         }
     } catch (err) {
-        alert("Server communication error.");
+        alert("Network failure: Willowton Cloud could not be updated.");
     }
 }
 
-// Modal Controls
+// Global UI Controls
 window.closeRejectionModal = () => {
     document.getElementById('rejectionModal').style.display = 'none';
-    document.getElementById('rejectionReason').value = '';
+    const reasonInput = document.getElementById('rejectionReason');
+    if (reasonInput) reasonInput.value = '';
 };

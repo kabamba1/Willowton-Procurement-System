@@ -1,43 +1,61 @@
+/** * --- WILLOWTON EXECUTIVE FINANCIAL REPORTING --- 
+ * Handles tax calculations (Zambia VAT 16%) and category-wise spend analysis.
+ * Dependencies: config.js and auth-session.js must be loaded first.
+ **/
+
+const ZAMBIA_VAT_RATE = 0.16;
+
 document.addEventListener('DOMContentLoaded', () => {
     generateFinancialReport();
 });
 
-const ZAMBIA_VAT_RATE = 0.16;
-
+/**
+ * 1. CORE DATA AGGREGATION
+ */
 async function generateFinancialReport() {
     try {
-        const response = await fetch(`${API_BASE}/purchase_orders`);
+        const response = await fetch(`${API_BASE_URL}/purchase_orders`);
+        if (!response.ok) throw new Error("Cloud registry unreachable");
+        
         const orders = await response.json();
 
-        // 1. CALCULATE EXECUTIVE STATS
+        // Calculate Executive Stats
         const totalGross = orders.reduce((sum, o) => sum + (parseFloat(o.totalAmount) || 0), 0);
-        const vatAmount = totalGross * ZAMBIA_VAT_RATE;
-        const netAmount = totalGross - vatAmount;
+        
+        /**
+         * VAT Calculation Logic:
+         * Assuming totalAmount is Gross (Inclusive of VAT)
+         * Net = Gross / (1 + VAT_RATE)
+         */
+        const netAmount = totalGross / (1 + ZAMBIA_VAT_RATE);
+        const vatAmount = totalGross - netAmount;
 
         const paid = orders.filter(o => o.status === 'APPROVED' || o.status === 'RECEIVED')
                            .reduce((sum, o) => sum + (parseFloat(o.totalAmount) || 0), 0);
         
         const pending = orders.filter(o => o.status === 'PENDING')
-                              .reduce((sum, o) => sum + (parseFloat(o.totalAmount) || 0), 0);
-
-        const rejected = orders.filter(o => o.status === 'REJECTED')
                                .reduce((sum, o) => sum + (parseFloat(o.totalAmount) || 0), 0);
 
-        // 2. UPDATE UI CARDS
-        // Total Committed Card with Tax Breakdown
-        document.getElementById('total-committed').innerHTML = `
-            <div style="font-size: 1.8rem; font-weight: 800;">${formatZMW(totalGross)}</div>
-            <div style="margin-top: 5px; padding-top: 5px; border-top: 1px solid #eee; font-size: 0.8rem;">
-                <span style="color: var(--text-muted);">Net: ${formatZMW(netAmount)}</span><br>
-                <span style="color: var(--accent); font-weight: 600;">VAT (16%): ${formatZMW(vatAmount)}</span>
-            </div>
-        `;
+        const rejected = orders.filter(o => o.status === 'REJECTED')
+                                .reduce((sum, o) => sum + (parseFloat(o.totalAmount) || 0), 0);
 
-        document.getElementById('total-paid').innerText = formatZMW(paid);
-        document.getElementById('total-pending').innerText = formatZMW(pending);
-        document.getElementById('total-saved').innerText = formatZMW(rejected);
+        // Update UI Cards
+        const committedEl = document.getElementById('total-committed');
+        if (committedEl) {
+            committedEl.innerHTML = `
+                <div class="h2 fw-bold mb-0">${formatZMW(totalGross)}</div>
+                <div class="mt-2 pt-2 border-top small">
+                    <div class="text-muted">Net Base: ${formatZMW(netAmount)}</div>
+                    <div class="text-primary fw-bold">VAT (16%): ${formatZMW(vatAmount)}</div>
+                </div>
+            `;
+        }
 
-        // 3. RENDER CATEGORY TABLE
+        updateValue('total-paid', formatZMW(paid));
+        updateValue('total-pending', formatZMW(pending));
+        updateValue('total-saved', formatZMW(rejected));
+
+        // 2. CATEGORY ANALYSIS
         const categories = {};
         orders.forEach(order => {
             const cat = order.category || 'General Operations';
@@ -50,27 +68,46 @@ async function generateFinancialReport() {
 
     } catch (err) {
         console.error("Report Generation Error:", err);
+        const tbody = document.getElementById('category-report-body');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Failed to generate cloud report.</td></tr>';
     }
 }
 
+/**
+ * 3. TABLE RENDERING
+ */
 function renderCategoryTable(categories, grandTotal) {
     const tbody = document.getElementById('category-report-body');
-    tbody.innerHTML = Object.keys(categories).map(name => {
+    if (!tbody) return;
+
+    const catKeys = Object.keys(categories);
+    
+    if (catKeys.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No financial data available for the selected period.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = catKeys.map(name => {
         const data = categories[name];
-        const percentage = ((data.total / grandTotal) * 100).toFixed(1);
+        const percentage = grandTotal > 0 ? ((data.total / grandTotal) * 100).toFixed(1) : 0;
         
         return `
             <tr>
                 <td><strong>${name}</strong></td>
                 <td>${data.count} Orders</td>
-                <td>
-                    <div style="width: 100%; background: #eee; border-radius: 10px; height: 8px;">
-                        <div style="width: ${percentage}%; background: var(--accent); height: 100%; border-radius: 10px;"></div>
+                <td class="w-25">
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-accent" role="progressbar" style="width: ${percentage}%"></div>
                     </div>
-                    <small>${percentage}% of total spend</small>
+                    <small class="text-muted d-block mt-1">${percentage}% of total spend</small>
                 </td>
-                <td style="text-align: right; font-weight: 700;">${formatZMW(data.total)}</td>
+                <td class="text-end fw-bold">${formatZMW(data.total)}</td>
             </tr>
         `;
     }).join('');
+}
+
+function updateValue(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = value;
 }
