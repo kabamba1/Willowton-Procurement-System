@@ -76,18 +76,6 @@ function displayUserContext() {
     }
 }
 
-/**
- * 4. GLOBAL UTILITIES
- */
-
-// Formatter for Zambian Kwacha (Used in Warehouse & Procurement)
-const formatZMW = (amount) => {
-    return new Intl.NumberFormat('en-ZM', {
-        style: 'currency',
-        currency: 'ZMW'
-    }).format(amount || 0);
-};
-
 // Global Logout
 function logout() {
     if (confirm("Log out of Willowton PMS?")) {

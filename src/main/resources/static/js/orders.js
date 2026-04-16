@@ -207,18 +207,18 @@ async function viewOrderDetails(id) {
         const order = await res.json();
         
         const container = document.getElementById('viewOrderContent');
+        // This creates the clean grid layout you wanted
         container.innerHTML = `
-            <div class="detail-grid">
-                <div class="detail-item"><strong>PO Number:</strong> <span>${order.poNumber || 'TBD'}</span></div>
-                <div class="detail-item"><strong>Vendor:</strong> <span>${order.supplierName}</span></div>
-                <div class="detail-item"><strong>Item SKU:</strong> <span>${order.itemCode}</span></div>
-                <div class="detail-item"><strong>Quantity:</strong> <span>${order.quantity}</span></div>
-                <div class="detail-item"><strong>Unit Price:</strong> <span>${formatZMW(order.unitPrice)}</span></div>
-                <div class="detail-item"><strong>Total Amount:</strong> <span class="fw-bold text-primary">${formatZMW(order.totalAmount)}</span></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #edf2f7;">
+                <div><label style="display:block; font-size: 0.7rem; color: #64748b; font-weight: 700;">PO NUMBER</label><span style="font-weight: 700; color: var(--primary);">#${order.poNumber || 'TBD'}</span></div>
+                <div><label style="display:block; font-size: 0.7rem; color: #64748b; font-weight: 700;">STATUS</label><span class="status-pill status-${order.status.toLowerCase()}">${order.status}</span></div>
+                <div><label style="display:block; font-size: 0.7rem; color: #64748b; font-weight: 700;">ITEM SKU</label><span>${order.itemCode}</span></div>
+                <div><label style="display:block; font-size: 0.7rem; color: #64748b; font-weight: 700;">TOTAL AMOUNT</label><span style="font-weight: 700; color: var(--accent);">${formatZMW(order.totalAmount)}</span></div>
             </div>
-            <div class="mt-3">
-                <strong>Internal Notes:</strong>
-                <p class="text-muted p-2 bg-light rounded">${order.notes || 'No notes provided for this order.'}</p>
+            <div style="border: 1px solid var(--border); padding: 15px; border-radius: 8px;">
+                <strong>Supplier:</strong> ${order.supplierName}<br>
+                <strong>Quantity:</strong> ${order.quantity}<br>
+                <strong>Notes:</strong> ${order.notes || 'N/A'}
             </div>
         `;
         
@@ -228,41 +228,23 @@ async function viewOrderDetails(id) {
     }
 }
 
+// Add these to match your HTML button clicks
 function closeViewOrderModal() {
     document.getElementById('viewOrderModal').style.display = 'none';
 }
 
 function deleteOrder(id) {
-    document.getElementById('deletePoId').value = id;
-    document.getElementById('deletePoMessage').innerHTML = `Are you sure you want to cancel Purchase Order <strong>#${id}</strong>?<br><small>This action is logged for audit purposes.</small>`;
-    document.getElementById('deletePoModal').style.display = 'flex';
+    const modal = document.getElementById('deletePoModal');
+    const input = document.getElementById('deletePoId');
+    if(modal && input) {
+        input.value = id;
+        document.getElementById('deletePoMessage').innerHTML = `Are you sure you want to cancel Purchase Order <strong>#${id}</strong>?`;
+        modal.style.display = 'flex';
+    }
 }
 
 function closeDeletePoModal() {
     document.getElementById('deletePoModal').style.display = 'none';
-}
-
-async function executePoDeletion() {
-    const id = document.getElementById('deletePoId').value;
-    const btn = document.getElementById('finalDeletePoBtn');
-    
-    try {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
-        
-        const res = await fetch(`${API_BASE_URL}/purchase_orders/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-            closeDeletePoModal();
-            loadOrders();
-        } else {
-            alert("⚠️ Restriction: Processed orders cannot be cancelled.");
-        }
-    } catch (err) {
-        alert("❌ Network Error.");
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Yes, Cancel Order";
-    }
 }
 
 // Global UI Helpers
