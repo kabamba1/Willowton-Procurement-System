@@ -1,6 +1,6 @@
 /** * --- WILLOWTON SUPPLIER REGISTRY MODULE --- 
  * Handles vendor onboarding, TPIN validation, and partner profiles.
- * Dependencies: config.js and auth-session.js must be loaded first.
+ * Dependencies: config.js must be loaded first to provide API_BASE_URL.
  **/
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -29,7 +29,6 @@ async function loadSuppliers() {
 
         tableBody.innerHTML = suppliers.map(sup => {
             const categoryText = sup.category || 'General';
-            // Create CSS-friendly class name (e.g., "Raw Materials" -> "cat-raw-materials")
             const catClass = `cat-${categoryText.toLowerCase().replace(/\s+/g, '-')}`;
             const statusText = (sup.status || 'ACTIVE').toUpperCase();
             const isActive = statusText === 'ACTIVE' || statusText === 'VERIFIED';
@@ -122,18 +121,42 @@ async function handleSupplierSubmit(e) {
 }
 
 /**
- * 3. SEARCH & ACTIONS
+ * 3. MODAL CONTROLS & ACTIONS
  */
-function setupSearch() {
-    const searchInput = document.getElementById('supplierSearch');
-    if (!searchInput) return;
-    searchInput.addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
-        const rows = document.querySelectorAll('#supplier-grid-body tr');
-        rows.forEach(row => {
-            row.style.display = row.innerText.toLowerCase().includes(term) ? '' : 'none';
-        });
-    });
+function openSupplierModal() {
+    document.getElementById('supplierModal').style.display = 'block';
+}
+
+function closeSupplierModal() {
+    document.getElementById('supplierModal').style.display = 'none';
+}
+
+function viewProfile(id) {
+    fetch(`${API_BASE_URL}/suppliers/${id}`)
+        .then(res => res.json())
+        .then(sup => {
+            document.getElementById('viewCompName').textContent = sup.companyName;
+            document.getElementById('viewTaxId').textContent = sup.taxId;
+            document.getElementById('viewCategory').textContent = sup.category;
+            document.getElementById('viewEmail').textContent = sup.contactEmail;
+            document.getElementById('viewPhone').textContent = sup.phoneNumber;
+            document.getElementById('viewSupplierModal').style.display = 'block';
+        })
+        .catch(() => alert("Error fetching profile details."));
+}
+
+function closeViewModal() {
+    document.getElementById('viewSupplierModal').style.display = 'none';
+}
+
+function deleteSupplier(id) {
+    document.getElementById('deleteTargetId').value = id;
+    // We can't pull the name easily from the row without more code, so we'll just show the ID or generic text
+    document.getElementById('deleteConfirmModal').style.display = 'block';
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteConfirmModal').style.display = 'none';
 }
 
 async function executeDelete() {
@@ -157,3 +180,25 @@ async function executeDelete() {
         btn.innerText = "Yes, Remove";
     }
 }
+
+function setupSearch() {
+    const searchInput = document.getElementById('supplierSearch');
+    if (!searchInput) return;
+    searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('#supplier-grid-body tr');
+        rows.forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(term) ? '' : 'none';
+        });
+    });
+}
+
+// Close modals if user clicks background
+window.onclick = function(event) {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    });
+};
