@@ -203,24 +203,65 @@ function calculatePOTotal() {
 async function viewOrderDetails(id) {
     try {
         const res = await fetch(`${API_BASE_URL}/purchase_orders/${id}`);
+        if (!res.ok) throw new Error();
         const order = await res.json();
-        alert(`Order Details:\nPO#: ${order.poNumber || 'TBD'}\nItem: ${order.itemCode}\nTotal: ${formatZMW(order.totalAmount)}\nNotes: ${order.notes || 'No notes'}`);
+        
+        const container = document.getElementById('viewOrderContent');
+        container.innerHTML = `
+            <div class="detail-grid">
+                <div class="detail-item"><strong>PO Number:</strong> <span>${order.poNumber || 'TBD'}</span></div>
+                <div class="detail-item"><strong>Vendor:</strong> <span>${order.supplierName}</span></div>
+                <div class="detail-item"><strong>Item SKU:</strong> <span>${order.itemCode}</span></div>
+                <div class="detail-item"><strong>Quantity:</strong> <span>${order.quantity}</span></div>
+                <div class="detail-item"><strong>Unit Price:</strong> <span>${formatZMW(order.unitPrice)}</span></div>
+                <div class="detail-item"><strong>Total Amount:</strong> <span class="fw-bold text-primary">${formatZMW(order.totalAmount)}</span></div>
+            </div>
+            <div class="mt-3">
+                <strong>Internal Notes:</strong>
+                <p class="text-muted p-2 bg-light rounded">${order.notes || 'No notes provided for this order.'}</p>
+            </div>
+        `;
+        
+        document.getElementById('viewOrderModal').style.display = 'flex';
     } catch (err) {
-        alert("Could not retrieve order details.");
+        alert("⚠️ Could not retrieve order details.");
     }
 }
 
-async function deleteOrder(id) {
-    if (!confirm("Are you sure you want to cancel this Pending order?")) return;
+function closeViewOrderModal() {
+    document.getElementById('viewOrderModal').style.display = 'none';
+}
+
+function deleteOrder(id) {
+    document.getElementById('deletePoId').value = id;
+    document.getElementById('deletePoMessage').innerHTML = `Are you sure you want to cancel Purchase Order <strong>#${id}</strong>?<br><small>This action is logged for audit purposes.</small>`;
+    document.getElementById('deletePoModal').style.display = 'flex';
+}
+
+function closeDeletePoModal() {
+    document.getElementById('deletePoModal').style.display = 'none';
+}
+
+async function executePoDeletion() {
+    const id = document.getElementById('deletePoId').value;
+    const btn = document.getElementById('finalDeletePoBtn');
+    
     try {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
+        
         const res = await fetch(`${API_BASE_URL}/purchase_orders/${id}`, { method: 'DELETE' });
         if (res.ok) {
+            closeDeletePoModal();
             loadOrders();
         } else {
-            alert("Could not cancel order. It may have already been processed.");
+            alert("⚠️ Restriction: Processed orders cannot be cancelled.");
         }
     } catch (err) {
-        alert("Connection error.");
+        alert("❌ Network Error.");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Yes, Cancel Order";
     }
 }
 
