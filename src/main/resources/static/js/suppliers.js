@@ -123,8 +123,9 @@ async function handleSupplierSubmit(e) {
 /**
  * 3. MODAL CONTROLS & ACTIONS
  */
+
 function openSupplierModal() {
-    document.getElementById('supplierModal').style.display = 'block';
+    document.getElementById('supplierModal').style.display = 'flex';
 }
 
 function closeSupplierModal() {
@@ -140,7 +141,9 @@ function viewProfile(id) {
             document.getElementById('viewCategory').textContent = sup.category;
             document.getElementById('viewEmail').textContent = sup.contactEmail;
             document.getElementById('viewPhone').textContent = sup.phoneNumber;
-            document.getElementById('viewSupplierModal').style.display = 'block';
+            
+            // Fix: Changed from 'block' to 'flex'
+            document.getElementById('viewSupplierModal').style.display = 'flex'; 
         })
         .catch(() => alert("Error fetching profile details."));
 }
@@ -151,8 +154,8 @@ function closeViewModal() {
 
 function deleteSupplier(id) {
     document.getElementById('deleteTargetId').value = id;
-    // We can't pull the name easily from the row without more code, so we'll just show the ID or generic text
-    document.getElementById('deleteConfirmModal').style.display = 'block';
+    // Fix: Changed from 'block' to 'flex'
+    document.getElementById('deleteConfirmModal').style.display = 'flex';
 }
 
 function closeDeleteModal() {

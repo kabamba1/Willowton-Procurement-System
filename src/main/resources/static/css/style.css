@@ -175,33 +175,38 @@ code {
 
 /* --- 6. MODAL SYSTEM --- */
 .modal {
-    display: none; 
+    display: none; /* JavaScript will toggle this to 'flex' */
     position: fixed;
     z-index: 1000;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    background: rgba(15, 23, 42, 0.7);
+    background: rgba(15, 23, 42, 0.7); /* Deep Navy Overlay */
     backdrop-filter: blur(4px);
-    justify-content: center;
+    
+    /* Centering Magic */
+    justify-content: center; 
     align-items: center;
+    padding: 20px; /* Prevents modal touching edges on mobile */
 }
 
 .modal-content {
     background: white;
     padding: 2rem;
-    width: 95%;
+    width: 100%;
     max-width: 550px;
     border-radius: 16px;
     position: relative;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    animation: slideIn 0.3s ease-out;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+    
+    /* Animation */
+    animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes slideIn {
-    from { transform: translateY(-20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+@keyframes modalPop {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
 }
 
 .close-btn {
