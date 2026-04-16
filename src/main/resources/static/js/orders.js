@@ -11,17 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * 0. UTILITIES & FORMATTING
- */
-function formatZMW(amount) {
-    return new Intl.NumberFormat('en-ZM', {
-        style: 'currency',
-        currency: 'ZMW',
-        minimumFractionDigits: 2
-    }).format(amount || 0);
-}
-
-/**
  * 1. SEARCH & FILTERS
  */
 function setupEventListeners() {
