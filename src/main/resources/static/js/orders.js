@@ -1,17 +1,25 @@
 /** * --- WILLOWTON PROCUREMENT ORDERS MODULE --- 
  * Handles the lifecycle of Purchase Orders from creation to registry sync.
- * Dependencies: config.js and auth-session.js must be loaded first.
+ * Dependencies: config.js must be loaded first.
  **/
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Shared display logic from auth-session.js
-    if (typeof displayUserName === 'function') displayUserName();
-    
     loadOrders();       
     loadDropdownData(); 
     loadCatalogToOrders();
     setupEventListeners();
 });
+
+/**
+ * 0. UTILITIES & FORMATTING
+ */
+function formatZMW(amount) {
+    return new Intl.NumberFormat('en-ZM', {
+        style: 'currency',
+        currency: 'ZMW',
+        minimumFractionDigits: 2
+    }).format(amount || 0);
+}
 
 /**
  * 1. SEARCH & FILTERS
@@ -38,6 +46,10 @@ function setupEventListeners() {
     });
 
     document.getElementById('createOrderForm')?.addEventListener('submit', handleOrderSubmit);
+    
+    // Auto-calculate total when quantity or price changes manually
+    document.getElementById('quantity')?.addEventListener('input', calculatePOTotal);
+    document.getElementById('unitPrice')?.addEventListener('input', calculatePOTotal);
 }
 
 /**
@@ -52,10 +64,10 @@ async function loadOrders() {
         if (!response.ok) throw new Error("Fetch failed");
         const orders = await response.json();
         
-        // Show newest first (Reverse Chronological)
+        // Show newest first
         tableBody.innerHTML = orders.reverse().map(order => {
             const status = (order.status || 'PENDING').toUpperCase();
-            const vendorName = order.supplierName || order.supplier?.companyName || "Vendor";
+            const vendorName = order.supplierName || (order.supplier ? order.supplier.companyName : "Vendor");
             const displayPO = order.poNumber || "TBD";
             
             return `
@@ -80,12 +92,12 @@ async function loadOrders() {
         }).join('');
     } catch (err) {
         console.error("Order Sync Error:", err);
-        tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Cloud registry unreachable. Check network.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger p-4">Cloud registry unreachable. Check network.</td></tr>';
     }
 }
 
 /**
- * 3. ORDER CREATION & CALCULATIONS
+ * 3. ORDER CREATION
  */
 async function handleOrderSubmit(event) {
     event.preventDefault();
@@ -123,12 +135,12 @@ async function handleOrderSubmit(event) {
                 document.getElementById('estimatedTotalDisplay').innerText = "ZMW 0.00";
             }
             loadOrders();
-            alert("PO created successfully and routed for Finance Approval.");
+            alert("✅ PO created successfully and routed for Finance Approval.");
         } else {
-            alert("Submission failed. Ensure all required fields are filled.");
+            alert("❌ Submission failed. Ensure all required fields are filled.");
         }
     } catch (err) {
-        alert("Server error during submission.");
+        alert("❌ Server error during submission.");
     }
 }
 
@@ -173,7 +185,8 @@ async function loadCatalogToOrders() {
         });
 
         skuDropdown.addEventListener('change', (e) => {
-            const price = e.target.options[e.target.selectedIndex].dataset.price;
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            const price = selectedOption.dataset.price;
             const priceInput = document.getElementById('unitPrice');
             if (price && priceInput) {
                 priceInput.value = price;
@@ -192,6 +205,33 @@ function calculatePOTotal() {
     
     if (display) {
         display.innerText = formatZMW(qty * price);
+    }
+}
+
+/**
+ * 5. ACTIONS (View & Delete)
+ */
+async function viewOrderDetails(id) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/purchase_orders/${id}`);
+        const order = await res.json();
+        alert(`Order Details:\nPO#: ${order.poNumber || 'TBD'}\nItem: ${order.itemCode}\nTotal: ${formatZMW(order.totalAmount)}\nNotes: ${order.notes || 'No notes'}`);
+    } catch (err) {
+        alert("Could not retrieve order details.");
+    }
+}
+
+async function deleteOrder(id) {
+    if (!confirm("Are you sure you want to cancel this Pending order?")) return;
+    try {
+        const res = await fetch(`${API_BASE_URL}/purchase_orders/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            loadOrders();
+        } else {
+            alert("Could not cancel order. It may have already been processed.");
+        }
+    } catch (err) {
+        alert("Connection error.");
     }
 }
 
