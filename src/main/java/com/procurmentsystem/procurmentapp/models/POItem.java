@@ -24,6 +24,7 @@ public class POItem {
     private Double unitPrice;
 
     // Standard field for the database
+   @Transient 
     private Double subtotal;
 
     // GETTERS AND SETTERS
