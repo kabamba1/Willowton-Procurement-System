@@ -1,6 +1,6 @@
 /** * --- WILLOWTON INVENTORY & SKU MANAGEMENT --- 
  * Handles the catalog of items, stock levels, and category filtering.
- * Dependencies: config.js and auth-session.js must be loaded first.
+ * Dependencies: config.js must be loaded first.
  **/
 
 let itemToDelete = null; 
@@ -17,6 +17,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
+ * 0. UTILITY FUNCTIONS
+ */
+function formatZMW(amount) {
+    return new Intl.NumberFormat('en-ZM', {
+        style: 'currency',
+        currency: 'ZMW',
+        minimumFractionDigits: 2
+    }).format(amount || 0);
+}
+
+/**
  * 1. FETCH & DISPLAY ITEMS
  */
 async function loadItems() {
@@ -24,7 +35,6 @@ async function loadItems() {
     if (!tableBody) return;
 
     try {
-        // Points to: https://willowton-pms.onrender.com/api/items
         const res = await fetch(`${API_BASE_URL}/items`);
         if (!res.ok) throw new Error("Fetch failed");
         
@@ -34,9 +44,8 @@ async function loadItems() {
             const isLowStock = item.stockLevel < 10;
             const stockColor = isLowStock ? 'color: var(--danger); font-weight: 800;' : 'color: var(--success);';
             const catClass = `cat-${(item.category || 'general').toLowerCase().replace(/\s+/g, '-')}`;
-
-            // Status logic: Treats both 'ACTIVE' and 'AVAILABLE' as positive statuses
-            const statusText = item.status || 'ACTIVE';
+            
+            const statusText = (item.status || 'ACTIVE').toUpperCase();
             const isActive = statusText === 'ACTIVE' || statusText === 'AVAILABLE';
 
             return `
@@ -49,14 +58,14 @@ async function loadItems() {
                     <td style="${stockColor}">${item.stockLevel} <small>${item.unitOfMeasure}</small></td>
                     <td>
                         <span class="status-pill ${isActive ? 'status-active' : 'status-inactive'}">
-                            ${statusText}
+                            <i class="fas ${isActive ? 'fa-check-circle' : 'fa-exclamation-triangle'} me-1"></i> ${statusText}
                         </span>
                     </td>
                     <td style="text-align: right;">
                         <button class="btn-icon" title="Edit SKU" onclick="editItem(${item.itemId})">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn-icon" title="Delete SKU" style="color:var(--danger); margin-left:8px;" 
+                        <button class="btn-icon text-danger" title="Delete SKU" style="margin-left:8px;" 
                                 onclick="openDeleteModal(${item.itemId}, '${item.itemCode}', '${item.description}')">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -66,12 +75,12 @@ async function loadItems() {
         }).join('');
     } catch (err) {
         console.error("Inventory Load Error:", err);
-        tableBody.innerHTML = '<tr><td colspan="8" class="text-center p-4">Inventory server unreachable. The cloud service may be waking up.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="8" class="text-center p-5 text-danger">Inventory server unreachable. Ensure the Willowton Cloud API is active.</td></tr>';
     }
 }
 
 /**
- * 2. CREATE OR UPDATE
+ * 2. CREATE OR UPDATE (POST/PUT)
  */
 async function handleItemSubmit(e) {
     e.preventDefault();
@@ -91,7 +100,7 @@ async function handleItemSubmit(e) {
 
     try {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
 
         const url = editingId ? `${API_BASE_URL}/items/${editingId}` : `${API_BASE_URL}/items`;
         const res = await fetch(url, {
@@ -105,10 +114,10 @@ async function handleItemSubmit(e) {
             loadItems();
             form.reset();
         } else {
-            alert("Error saving item. Ensure the Item Code is unique.");
+            alert("❌ Save failed. Ensure the SKU code is unique and the server is online.");
         }
     } catch (err) {
-        alert("Connection error. Ensure the server is active.");
+        alert("❌ Network Error: Connection to Willowton Cloud failed.");
     } finally {
         btn.disabled = false;
         btn.innerHTML = "Save SKU to Catalog";
@@ -121,6 +130,7 @@ async function handleItemSubmit(e) {
 async function editItem(id) {
     try {
         const res = await fetch(`${API_BASE_URL}/items/${id}`);
+        if (!res.ok) throw new Error();
         const item = await res.json();
 
         document.getElementById('itemCode').value = item.itemCode;
@@ -134,10 +144,10 @@ async function editItem(id) {
         form.dataset.editingId = id;
         
         document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Update SKU';
-        document.getElementById('modalTitle').innerText = "Edit Inventory Item";
-        document.getElementById('itemModal').style.display = 'flex';
+        document.getElementById('modalTitle').innerText = "Edit Inventory SKU";
+        document.getElementById('itemModal').style.display = 'flex'; // Centered Flex
     } catch (err) {
-        alert("Could not retrieve item details.");
+        alert("⚠️ Could not retrieve SKU details for editing.");
     }
 }
 
@@ -153,11 +163,11 @@ async function executeDeletion() {
             closeDeleteModal();
             loadItems();
         } else {
-            alert("Delete failed. Items linked to Purchase Orders cannot be removed for audit integrity.");
+            alert("⚠️ Audit Restriction: This item is linked to active Purchase Orders and cannot be removed.");
             closeDeleteModal();
         }
     } catch (err) {
-        alert("Server communication error.");
+        alert("❌ Error connecting to the delete service.");
     }
 }
 
@@ -185,7 +195,9 @@ function setupFilters() {
     filter?.addEventListener('change', runFilter);
 }
 
-// UI MODAL HELPERS
+/**
+ * 6. UI HELPERS (MODALS)
+ */
 window.openItemModal = () => {
     const form = document.getElementById('itemForm');
     if (!form.dataset.editingId) {
@@ -206,7 +218,7 @@ window.openDeleteModal = (id, code, description) => {
     itemToDelete = id;
     const msg = document.getElementById('deleteMessage');
     if (msg) {
-        msg.innerHTML = `Remove <strong>${code}</strong> (<em>${description}</em>) from the Willowton Registry?`;
+        msg.innerHTML = `Remove SKU: <strong>${code}</strong><br><small>${description}</small><br><br>This action cannot be undone.`;
     }
     document.getElementById('deleteModal').style.display = 'flex';
 };
