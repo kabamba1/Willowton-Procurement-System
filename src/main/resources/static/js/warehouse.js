@@ -202,6 +202,6 @@ function logout() {
         localStorage.clear();
         
         // Redirect
-        window.location.href = 'index.html';
+        window.location.href = 'login.html';
     }
 }
