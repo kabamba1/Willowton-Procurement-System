@@ -77,8 +77,8 @@ async function loadUserTable() {
             <tr>
                 <td><strong>${user.fullName}</strong></td>
                 <td><code>${user.username}</code></td>
-                <td><span class="badge bg-light text-primary border">${(roleMap[user.roleId] || "Guest").toUpperCase()}</span></td>
-                <td>${deptMap[user.deptId] || "Operations"}</td>
+                <td><span class="badge bg-light text-primary border">${(user.role ? user.role.roleName : "Guest").toUpperCase()}</span></td>
+                <td>${user.department ? user.department.deptName : "Operations"}</td>
                 <td><span class="status-pill status-active text-success small fw-bold">VERIFIED</span></td>
                 <td class="text-end">
                     <button class="btn-icon" onclick="editUser(${user.userId})"><i class="fas fa-user-shield"></i></button>
@@ -93,13 +93,16 @@ async function handleUserSubmit(e) {
     e.preventDefault();
     const id = document.getElementById('editUserId').value;
     const isEdit = id !== "";
+    
+    // Payload wrapped in objects to match Spring Boot/JPA Entity expectations
     const payload = {
         fullName: document.getElementById('newFullName').value,
         username: document.getElementById('newUsername').value,
         password: document.getElementById('newPassword').value,
-        roleId: parseInt(document.getElementById('roleSelect').value),
-        deptId: parseInt(document.getElementById('deptSelect').value)
+        role: { roleId: parseInt(document.getElementById('roleSelect').value) },
+        department: { deptId: parseInt(document.getElementById('deptSelect').value) }
     };
+    
     try {
         const url = isEdit ? `${API_BASE_URL}/users/${id}` : `${API_BASE_URL}/users/register`;
         const res = await fetch(url, {
@@ -107,8 +110,18 @@ async function handleUserSubmit(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        if (res.ok) { alert("Success"); closeUserModal(); loadUserTable(); }
-    } catch (err) { alert("Network Error"); }
+        
+        if (res.ok) { 
+            alert("Success: Personnel record updated."); 
+            closeUserModal(); 
+            loadUserTable(); 
+        } else {
+            console.error("Server Error: 500 or validation failure");
+            alert("Server Error: Please check database constraints.");
+        }
+    } catch (err) { 
+        alert("Network Error"); 
+    }
 }
 
 // ACCESS HELPERS
@@ -117,17 +130,22 @@ function closeUserModal() {
     document.getElementById('userModal').style.display = 'none'; 
     document.getElementById('createUserForm').reset();
     document.getElementById('editUserId').value = "";
+    document.getElementById('submitBtn').textContent = "Create Account";
 }
 
 async function editUser(id) {
     try {
         const res = await fetch(`${API_BASE_URL}/users/${id}`);
         const user = await res.json();
+        
         document.getElementById('editUserId').value = user.userId;
         document.getElementById('newFullName').value = user.fullName;
         document.getElementById('newUsername').value = user.username;
-        document.getElementById('roleSelect').value = user.roleId;
-        document.getElementById('deptSelect').value = user.deptId;
+        
+        // Handling nested objects for the edit modal
+        if (user.role) document.getElementById('roleSelect').value = user.role.roleId;
+        if (user.department) document.getElementById('deptSelect').value = user.department.deptId;
+        
         document.getElementById('submitBtn').textContent = "Update Credentials";
         openUserModal();
     } catch (err) { alert("Fetch failed"); }
