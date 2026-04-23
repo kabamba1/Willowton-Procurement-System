@@ -18,33 +18,41 @@ function checkSession() {
     }
 
     const user = JSON.parse(userJson);
-    console.log("Current User Object:", user); // This helps us see the structure in F12
-
+    
     // 1. Set the Full Name
     const nameDisplay = document.getElementById('user-display-name');
-    if (nameDisplay) nameDisplay.innerText = user.fullName || "Unknown User";
+    if (nameDisplay) nameDisplay.innerText = user.fullName || "Enock Silavwe";
 
-    // 2. Set the Role Label (Deep Scan)
+    // 2. Set the Role Label (Advanced Mapping)
     const roleDisplay = document.getElementById('user-role-label');
     if (roleDisplay) {
-        // We try: 
-        // A. The nested object (user.role.roleName)
-        // B. The flat field (user.roleName)
-        // C. The ID fallback
-        const roleName = (user.role && user.role.roleName) ? user.role.roleName : 
-                         (user.roleName) ? user.roleName : "Warehouse Operations";
+        let roleTitle = "User";
+
+        if (user.role && user.role.roleName) {
+            // Case A: Role is a nested object from Spring Boot
+            roleTitle = user.role.roleName;
+        } else {
+            // Case B: Role is just an ID number (Mapping manual check)
+            const rid = user.roleId || (user.role ? user.role : null);
+            const roleMap = {
+                1: "System Admin",
+                2: "Finance Manager",
+                3: "Procurement Officer",
+                4: "Warehouse Supervisor"
+            };
+            roleTitle = roleMap[rid] || "Warehouse Operations";
+        }
         
-        roleDisplay.innerText = roleName;
+        roleDisplay.innerText = roleTitle;
     }
 
-    // 3. Strict Access Control
-    const rid = (user.role && user.role.roleId) ? user.role.roleId : user.roleId;
-    if (![1, 4].includes(rid)) {
-        alert("Access Denied: You do not have Warehouse Supervisor clearance.");
+    // 3. Access Control (Admin or Supervisor)
+    const accessId = user.roleId || (user.role && user.role.roleId ? user.role.roleId : user.role);
+    if (![1, 4].includes(Number(accessId))) {
+        alert("Access Denied: Warehouse Supervisor clearance required.");
         window.location.href = 'dashboard.html';
     }
 }
-
 /** --- 2. STOCK CATALOG & METRICS --- **/
 async function syncWarehouse() {
     const tableBody = document.getElementById('inventory-table-body');
@@ -187,7 +195,7 @@ function logout() {
     // Prevent default anchor behavior if called from an <a> tag
     if (event) event.preventDefault();
 
-    if (confirm("Terminate session and return to login?")) {
+    if (confirm("Log out of Willowton PMS?")) {
         console.log("Willowton PMS: Clearing session...");
         
         // Clear all data
