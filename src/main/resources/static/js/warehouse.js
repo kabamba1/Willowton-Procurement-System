@@ -40,7 +40,7 @@ function checkSession() {
                 3: "Procurement Officer",
                 4: "Warehouse Supervisor"
             };
-            roleTitle = roleMap[rid] || "Warehouse Operations";
+            roleTitle = roleMap[rid] || "Warehouse Supervisor";
         }
         
         roleDisplay.innerText = roleTitle;
