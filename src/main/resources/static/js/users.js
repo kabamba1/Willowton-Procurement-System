@@ -70,26 +70,22 @@ async function loadUserTable() {
         const response = await fetch(`${API_BASE_URL}/users`);
         const users = await response.json();
         
+        // DEBUG: This will show us exactly what the backend is sending
+        console.log("Raw users from server:", users);
+        console.log("Current roleMap state:", roleMap);
+
         if (users.length === 0) {
             tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-4">No personnel found.</td></tr>';
             return;
         }
 
         tableBody.innerHTML = users.map(user => {
-            // Logic to handle both Object format and ID format
-            let roleName = "Guest";
-            if (user.role && user.role.roleName) {
-                roleName = user.role.roleName;
-            } else if (user.roleId && roleMap[user.roleId]) {
-                roleName = roleMap[user.roleId];
-            }
+            // Check for Object, then check for ID in Map, else "GUEST"
+            let roleName = (user.role && user.role.roleName) ? user.role.roleName : 
+                           (roleMap[user.roleId] || "Guest");
 
-            let deptName = "Operations";
-            if (user.department && user.department.deptName) {
-                deptName = user.department.deptName;
-            } else if (user.deptId && deptMap[user.deptId]) {
-                deptName = deptMap[user.deptId];
-            }
+            let deptName = (user.department && user.department.deptName) ? user.department.deptName : 
+                           (deptMap[user.deptId] || "Operations");
 
             return `
                 <tr>
