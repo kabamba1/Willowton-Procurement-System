@@ -69,24 +69,46 @@ async function loadUserTable() {
     try {
         const response = await fetch(`${API_BASE_URL}/users`);
         const users = await response.json();
+        
         if (users.length === 0) {
             tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-4">No personnel found.</td></tr>';
             return;
         }
-        tableBody.innerHTML = users.map(user => `
-            <tr>
-                <td><strong>${user.fullName}</strong></td>
-                <td><code>${user.username}</code></td>
-                <td><span class="badge bg-light text-primary border">${(user.role ? user.role.roleName : "Guest").toUpperCase()}</span></td>
-                <td>${user.department ? user.department.deptName : "Operations"}</td>
-                <td><span class="status-pill status-active text-success small fw-bold">VERIFIED</span></td>
-                <td class="text-end">
-                    <button class="btn-icon" onclick="editUser(${user.userId})"><i class="fas fa-user-shield"></i></button>
-                    <button class="btn-icon text-danger ms-2" onclick="deleteUser(${user.userId})"><i class="fas fa-user-slash"></i></button>
-                </td>
-            </tr>
-        `).join('');
-    } catch (err) { tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Registry Offline.</td></tr>'; }
+
+        tableBody.innerHTML = users.map(user => {
+            // Logic to handle both Object format and ID format
+            let roleName = "Guest";
+            if (user.role && user.role.roleName) {
+                roleName = user.role.roleName;
+            } else if (user.roleId && roleMap[user.roleId]) {
+                roleName = roleMap[user.roleId];
+            }
+
+            let deptName = "Operations";
+            if (user.department && user.department.deptName) {
+                deptName = user.department.deptName;
+            } else if (user.deptId && deptMap[user.deptId]) {
+                deptName = deptMap[user.deptId];
+            }
+
+            return `
+                <tr>
+                    <td><strong>${user.fullName}</strong></td>
+                    <td><code>${user.username}</code></td>
+                    <td><span class="badge bg-light text-primary border">${roleName.toUpperCase()}</span></td>
+                    <td>${deptName}</td>
+                    <td><span class="status-pill status-active text-success small fw-bold">VERIFIED</span></td>
+                    <td class="text-end">
+                        <button class="btn-icon" onclick="editUser(${user.userId})"><i class="fas fa-user-shield"></i></button>
+                        <button class="btn-icon text-danger ms-2" onclick="deleteUser(${user.userId})"><i class="fas fa-user-slash"></i></button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (err) { 
+        console.error("Table Load Error:", err);
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Registry Offline.</td></tr>'; 
+    }
 }
 
 async function handleUserSubmit(e) {
