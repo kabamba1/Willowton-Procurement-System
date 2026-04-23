@@ -18,16 +18,25 @@ function checkSession() {
     }
 
     const user = JSON.parse(userJson);
-    const rid = user.roleId || (user.role ? user.role.roleId : null);
+    
+    // 1. Fix the Name Display
+    const nameDisplay = document.getElementById('user-display-name');
+    if (nameDisplay) nameDisplay.innerText = user.fullName || "Unknown User";
 
-    const allowedRoles = [1, 4];
-    if (!allowedRoles.includes(rid)) {
-        alert("Access Denied: Warehouse Management clearance required.");
+    // 2. Fix the Role Display
+    const roleDisplay = document.getElementById('user-role-label');
+    if (roleDisplay) {
+        // Look inside the role object if it exists, otherwise check roleId
+        const roleName = user.role ? user.role.roleName : "User";
+        roleDisplay.innerText = roleName;
+    }
+
+    // 3. Access Control
+    const rid = user.role ? user.role.roleId : user.roleId;
+    if (![1, 4].includes(rid)) {
+        alert("Access Denied.");
         window.location.href = 'dashboard.html';
     }
-    
-    const nameDisplay = document.getElementById('user-display-name');
-    if (nameDisplay) nameDisplay.innerText = user.fullName;
 }
 
 /** --- 2. STOCK CATALOG & METRICS --- **/
