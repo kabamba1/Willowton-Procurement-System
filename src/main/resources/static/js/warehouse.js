@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadMovementHistory();     
 });
 
-/** --- 1. ACCESS CONTROL --- **/
+/** --- 1. ACCESS CONTROL & SESSION --- **/
 function checkSession() {
     const userJson = localStorage.getItem('currentUser');
     if (!userJson) {
@@ -19,19 +19,15 @@ function checkSession() {
 
     const user = JSON.parse(userJson);
     
-    // 1. Fix the Name Display
     const nameDisplay = document.getElementById('user-display-name');
     if (nameDisplay) nameDisplay.innerText = user.fullName || "Unknown User";
 
-    // 2. Fix the Role Display
     const roleDisplay = document.getElementById('user-role-label');
     if (roleDisplay) {
-        // Look inside the role object if it exists, otherwise check roleId
         const roleName = user.role ? user.role.roleName : "User";
         roleDisplay.innerText = roleName;
     }
 
-    // 3. Access Control
     const rid = user.role ? user.role.roleId : user.roleId;
     if (![1, 4].includes(rid)) {
         alert("Access Denied.");
@@ -175,4 +171,19 @@ async function loadMovementHistory() {
 function updateElement(id, val) {
     const el = document.getElementById(id);
     if(el) el.innerText = val;
+}
+/** --- 5. SESSION TERMINATION --- **/
+function logout() {
+    // Prevent default anchor behavior if called from an <a> tag
+    if (event) event.preventDefault();
+
+    if (confirm("Terminate session and return to login?")) {
+        console.log("Willowton PMS: Clearing session...");
+        
+        // Clear all data
+        localStorage.clear();
+        
+        // Redirect
+        window.location.href = 'index.html';
+    }
 }
