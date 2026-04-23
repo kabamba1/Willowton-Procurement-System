@@ -85,13 +85,13 @@ async function loadPendingOrders() {
     const catClass = `cat-${categoryText.toLowerCase().replace(/\s+/g, '-')}`;
 
     // THE FIX: Check for the flat field OR the nested supplier company name
-    const vendorDisplayName = order.supplierName || 
-                              (order.supplier ? order.supplier.companyName : 'Unknown Vendor');
+const vendorDisplayName = order.supplierName || 
+                          (order.supplier ? (order.supplier.companyName || order.supplier.name || order.supplier.supplierName) : 'Unknown Vendor');
     
     // Also fixing the creator name logic just in case
     const officerName = order.creatorName || 
                         (order.creator ? order.creator.fullName : 'Procurement Officer');
-
+console.log(`Order ${order.orderId} Data:`, order);
     return `
         <tr>
             <td><strong>${order.poNumber || 'TBD'}</strong></td>
