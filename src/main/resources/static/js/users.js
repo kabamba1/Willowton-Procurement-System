@@ -3,8 +3,6 @@
  * Handles account creation, metadata mapping, and permissions.
  **/
 
-const API_BASE_URL = "https://willowton-pms.onrender.com";
-
 // Global Cache for Mapping IDs to Human-Readable Names
 let roleMap = {};
 let deptMap = {};
