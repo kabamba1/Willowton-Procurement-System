@@ -23,30 +23,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadRolesAndDepts() {
+    console.log("Willowton Registry: Fetching metadata from", API_BASE_URL);
     try {
         const [rolesRes, deptsRes] = await Promise.all([
             fetch(`${API_BASE_URL}/roles`),
             fetch(`${API_BASE_URL}/departments`)
         ]);
+
+        if (!rolesRes.ok || !deptsRes.ok) throw new Error("Cloud registry returned an error.");
+
         const roles = await rolesRes.json();
         const depts = await deptsRes.json();
+
+        console.log("Roles received:", roles);
+        console.log("Departments received:", depts);
 
         const roleSelect = document.getElementById('roleSelect');
         const deptSelect = document.getElementById('deptSelect');
 
-        if (roleSelect) roleSelect.innerHTML = '<option value="">-- Assign Corporate Role --</option>';
-        if (deptSelect) deptSelect.innerHTML = '<option value="">-- Select Department --</option>';
+        if (roleSelect) {
+            roleSelect.innerHTML = '<option value="">-- Assign Corporate Role --</option>';
+            roles.forEach(r => {
+                roleMap[r.roleId] = r.roleName; 
+                roleSelect.add(new Option(r.roleName, r.roleId));
+            });
+        }
 
-        roles.forEach(r => {
-            roleMap[r.roleId] = r.roleName; 
-            if (roleSelect) roleSelect.add(new Option(r.roleName, r.roleId));
-        });
-
-        depts.forEach(d => {
-            deptMap[d.deptId] = d.deptName;
-            if (deptSelect) deptSelect.add(new Option(d.deptName, d.deptId));
-        });
-    } catch (err) { console.error("Metadata Sync Failed:", err); }
+        if (deptSelect) {
+            deptSelect.innerHTML = '<option value="">-- Select Department --</option>';
+            depts.forEach(d => {
+                deptMap[d.deptId] = d.deptName;
+                deptSelect.add(new Option(d.deptName, d.deptId));
+            });
+        }
+        
+        console.log("Metadata Sync: Complete.");
+    } catch (err) { 
+        console.error("Willowton Personnel Error: Metadata sync failed.", err); 
+    }
 }
 
 async function loadUserTable() {
