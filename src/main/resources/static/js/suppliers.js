@@ -154,7 +154,6 @@ function closeViewModal() {
 
 function deleteSupplier(id) {
     document.getElementById('deleteTargetId').value = id;
-    // Fix: Changed from 'block' to 'flex'
     document.getElementById('deleteConfirmModal').style.display = 'flex';
 }
 
