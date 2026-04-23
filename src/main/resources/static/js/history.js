@@ -14,11 +14,16 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadAuditTrail() {
     const tableBody = document.getElementById('audit-table-body');
     if (!tableBody) return; 
-    
+
+    // 1. Double-check if config.js actually loaded
+    if (typeof API_BASE_URL === 'undefined') {
+        console.error("Critical: config.js failed to load API_BASE_URL");
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-warning">System Configuration Loading... Please Refresh.</td></tr>';
+        return;
+    }
+
     try {
-        // Fetching all orders from: https://willowton-pms.onrender.com/api/purchase_orders
         const res = await fetch(`${API_BASE_URL}/purchase_orders`);
-        if (!res.ok) throw new Error("Cloud data sync failed");
         
         const orders = await res.json();
         
