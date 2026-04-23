@@ -3,17 +3,17 @@
  **/
 
 document.addEventListener('DOMContentLoaded', () => {
-    syncBudgetSystem();
+    initializeBudget();
 });
 
 /**
- * 1. CORE SYNC LOGIC
+ * 1. INITIALIZATION & DATA FETCHING
  */
-async function syncBudgetSystem() {
+async function initializeBudget() {
     const period = getPeriodKey();
     const storageKey = `willowton_budget_${period}`;
     
-    // 1. Handle Limit Setup
+    // Get/Set Monthly Limit
     let currentLimit = localStorage.getItem(storageKey);
     if (!currentLimit) {
         currentLimit = localStorage.getItem('last_active_limit') || 500000;
@@ -24,14 +24,13 @@ async function syncBudgetSystem() {
     if (inputEl) inputEl.value = currentLimit;
 
     try {
-        // 2. Fetch Real Data
         const res = await fetch(`${API_BASE_URL}/purchase_orders`);
         if (!res.ok) throw new Error("Financial data sync failed");
         
         const orders = await res.json();
         const now = new Date();
 
-        // 3. Calculate Actual Spending
+        // Calculate Spending for April 2026
         const spentThisMonth = orders.filter(o => {
             const orderDate = new Date(o.createdAt);
             return (o.status === 'APPROVED' || o.status === 'RECEIVED') &&
@@ -39,7 +38,7 @@ async function syncBudgetSystem() {
                    orderDate.getFullYear() === now.getFullYear();
         }).reduce((sum, o) => sum + (parseFloat(o.totalAmount) || 0), 0);
 
-        // 4. Update UI Components
+        // Update the Dashboard
         updateBudgetUI(spentThisMonth, parseFloat(currentLimit));
         generateFiscalArchive(orders);
 
@@ -53,28 +52,24 @@ async function syncBudgetSystem() {
 }
 
 /**
- * 2. UI RENDERING
+ * 2. UI RENDERING (Matches your HTML IDs)
  */
 function updateBudgetUI(totalUsed, budgetLimit) {
     const percentage = budgetLimit > 0 ? (totalUsed / budgetLimit) * 100 : 0;
     const remaining = budgetLimit - totalUsed;
 
-    // Available Spend Remaining
-    const remainingEl = document.getElementById('available-spend'); // Check if your HTML ID is this
-    if (remainingEl) remainingEl.innerText = formatZMW(remaining);
+    const remainingEl = document.getElementById('remainingValue'); 
+    if (remainingEl) {
+        remainingEl.innerText = formatZMW(remaining);
+        remainingEl.style.color = remaining < 0 ? 'var(--danger)' : 'var(--success)';
+    }
 
-    // Percentage Display
-    const display = document.getElementById('budgetUsedDisplay');
-    if (display) display.innerText = `${percentage.toFixed(1)}%`;
+    const spentEl = document.getElementById('spentLabel');
+    if (spentEl) spentEl.innerText = `Spent: ${formatZMW(totalUsed)}`;
 
-    // Spent vs Limit Labels
-    const spentLabel = document.getElementById('spentLabel');
-    if (spentLabel) spentLabel.innerText = `Spent: ${formatZMW(totalUsed)}`;
-    
-    const limitLabel = document.getElementById('limitLabel');
-    if (limitLabel) limitLabel.innerText = `Limit: ${formatZMW(budgetLimit)}`;
-    
-    // Progress Bar
+    const limitEl = document.getElementById('limitLabel');
+    if (limitEl) limitEl.innerText = `Limit: ${formatZMW(budgetLimit)}`;
+
     const progressBar = document.getElementById('budgetProgressBar');
     if (progressBar) {
         progressBar.style.width = `${Math.min(percentage, 100)}%`;
@@ -83,7 +78,7 @@ function updateBudgetUI(totalUsed, budgetLimit) {
 }
 
 /**
- * 3. FISCAL ARCHIVE
+ * 3. FISCAL ARCHIVE & ACTIONS
  */
 function generateFiscalArchive(orders) {
     const archiveBody = document.getElementById('fiscalArchiveBody');
@@ -107,11 +102,11 @@ function generateFiscalArchive(orders) {
         const isCurrent = (m === now.getMonth());
 
         html = `
-            <tr ${isCurrent ? 'style="background: #f0f9ff; font-weight: bold;"' : ''}>
+            <tr ${isCurrent ? 'style="background: rgba(14, 165, 233, 0.1); font-weight: bold;"' : ''}>
                 <td>${months[m]} 2026</td>
                 <td>${formatZMW(limit)}</td>
                 <td>${formatZMW(monthSpent)}</td>
-                <td style="color: ${variance < 0 ? '#e11d48' : '#10b981'}">
+                <td style="color: ${variance < 0 ? 'var(--danger)' : 'var(--success)'}">
                     ${variance < 0 ? '-' : '+'} ${formatZMW(Math.abs(variance))}
                 </td>
                 <td><span class="status-pill ${isCurrent ? 'status-pending' : 'status-approved'}">${isCurrent ? 'ACTIVE' : 'CLOSED'}</span></td>
