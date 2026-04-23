@@ -81,32 +81,40 @@ async function loadPendingOrders() {
         }
 
         tableBody.innerHTML = pending.map(order => {
-            const categoryText = order.category || 'Operations';
-            const catClass = `cat-${categoryText.toLowerCase().replace(/\s+/g, '-')}`;
-            
-            return `
-                <tr>
-                    <td><strong>${order.poNumber || 'TBD'}</strong></td>
-                    <td>
-                        <div class="fw-bold">${order.creatorName || order.creator?.fullName || 'Procurement Officer'}</div>
-                        <small class="text-muted">Willowton Procurement</small>
-                    </td>
-                    <td>
-                        <span class="category-pill ${catClass}">${categoryText}</span>
-                        <div class="small mt-1">${order.supplierName || 'Unknown Vendor'}</div>
-                    </td>
-                    <td class="fw-bold text-primary">${formatZMW(order.totalAmount)}</td>
-                    <td class="text-center">
-                        <button onclick="updateOrderStatus(${order.orderId}, 'APPROVED')" class="btn-approve" title="Approve Expenditure">
-                            <i class="fas fa-check"></i>
-                        </button>
-                        <button onclick="updateOrderStatus(${order.orderId}, 'REJECTED')" class="btn-reject ms-2" title="Reject with Reason">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+    const categoryText = order.category || 'Operations';
+    const catClass = `cat-${categoryText.toLowerCase().replace(/\s+/g, '-')}`;
+
+    // THE FIX: Check for the flat field OR the nested supplier company name
+    const vendorDisplayName = order.supplierName || 
+                              (order.supplier ? order.supplier.companyName : 'Unknown Vendor');
+    
+    // Also fixing the creator name logic just in case
+    const officerName = order.creatorName || 
+                        (order.creator ? order.creator.fullName : 'Procurement Officer');
+
+    return `
+        <tr>
+            <td><strong>${order.poNumber || 'TBD'}</strong></td>
+            <td>
+                <div class="fw-bold">${officerName}</div>
+                <small class="text-muted">Willowton Procurement</small>
+            </td>
+            <td>
+                <span class="category-pill ${catClass}">${categoryText}</span>
+                <div class="small mt-1">${vendorDisplayName}</div>
+            </td>
+            <td class="fw-bold text-primary">${formatZMW(order.totalAmount)}</td>
+            <td class="text-center">
+                <button onclick="updateOrderStatus(${order.orderId}, 'APPROVED')" class="btn-approve" title="Approve Expenditure">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button onclick="updateOrderStatus(${order.orderId}, 'REJECTED')" class="btn-reject ms-2" title="Reject with Reason">
+                    <i class="fas fa-times"></i>
+                </button>
+            </td>
+        </tr>
+    `;
+}).join('');
     } catch (err) {
         console.error("Queue Load Error:", err);
         tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Lost connection to Finance Registry.</td></tr>';
