@@ -1,18 +1,12 @@
 /** * --- WILLOWTON PMS - WAREHOUSE MODULE --- 
  * Inventory Management & Goods Receipt
- * Handles stock levels, receiving deliveries, and audit trails.
  **/
-
-const API_BASE_URL = "https://willowton-pms.onrender.com";
 
 document.addEventListener('DOMContentLoaded', () => {
     checkSession();
-    loadUserProfile();
-    
-    // Initial Data Fetch
-    syncWarehouse();           // Current Stock levels
-    loadExpectedDeliveries();  // Filtered Approved POs
-    loadMovementHistory();     // Audit Trail
+    syncWarehouse();           
+    loadExpectedDeliveries();  
+    loadMovementHistory();     
 });
 
 /** --- 1. ACCESS CONTROL --- **/
@@ -24,14 +18,16 @@ function checkSession() {
     }
 
     const user = JSON.parse(userJson);
-    const rid = user.roleId || user.role_id;
+    const rid = user.roleId || (user.role ? user.role.roleId : null);
 
-    // Strict Access: Admin (1) or Warehouse Supervisor (4)
     const allowedRoles = [1, 4];
     if (!allowedRoles.includes(rid)) {
         alert("Access Denied: Warehouse Management clearance required.");
         window.location.href = 'dashboard.html';
     }
+    
+    const nameDisplay = document.getElementById('user-display-name');
+    if (nameDisplay) nameDisplay.innerText = user.fullName;
 }
 
 /** --- 2. STOCK CATALOG & METRICS --- **/
@@ -45,14 +41,13 @@ async function syncWarehouse() {
         
         const items = await res.json();
 
-        // Metric Calculations for Dashboard Cards
         const lowStockThreshold = 10;
         const lowStockItems = items.filter(i => (i.stockLevel || 0) <= lowStockThreshold).length;
-        const totalValue = items.reduce((acc, i) => acc + ((i.lastUnitPrice || 0) * (i.stockLevel || 0)), 0);
+        const totalValue = items.reduce((acc, i) => acc + ((i.unitPrice || 0) * (i.stockLevel || 0)), 0);
 
         updateElement('total-sku-count', items.length);
         updateElement('low-stock-count', lowStockItems);
-        updateElement('stock-valuation', formatZMW(totalValue));
+        updateElement('stock-valuation', formatZMW(totalValue)); // Uses config.js
 
         tableBody.innerHTML = items.map(item => {
             const isLow = (item.stockLevel || 0) <= lowStockThreshold;
@@ -61,22 +56,20 @@ async function syncWarehouse() {
             return `
                 <tr>
                     <td>
-                        <div class="fw-bold text-primary">${item.description}</div>
-                        <small class="text-muted">SKU: ${item.itemCode}</small>
+                        <div class="fw-bold text-primary">${item.itemDescription || 'Unnamed Item'}</div>
+                        <small class="text-muted">ID: # ${item.itemId}</small>
                     </td>
                     <td><span class="category-pill">${item.category || 'General'}</span></td>
-                    <td>
-                        <span class="fw-bold">${item.stockLevel.toLocaleString()}</span> 
-                        <small class="text-muted">${item.unitOfMeasure || 'Units'}</small>
-                    </td>
-                    <td>${formatZMW(item.lastUnitPrice)}</td>
+                    <td><span class="fw-bold">${(item.stockLevel || 0).toLocaleString()}</span></td>
+                    <td>${formatZMW(item.unitPrice || 0)}</td>
                     <td><span class="status-pill ${statusClass}">${isLow ? 'REORDER' : 'IN STOCK'}</span></td>
                 </tr>
             `;
         }).join('');
 
     } catch (err) {
-        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger p-4">Registry Offline.</td></tr>`;
+        console.error("Sync Error:", err);
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger p-4">Warehouse Database Offline.</td></tr>`;
     }
 }
 
@@ -96,7 +89,7 @@ async function loadExpectedDeliveries() {
 
         deliveryTable.innerHTML = orders.map(order => `
             <tr>
-                <td><code class="fw-bold">${order.poNumber}</code></td>
+                <td><code class="fw-bold">${order.poNumber || 'PO-NEW'}</code></td>
                 <td>
                     <strong>${order.itemName}</strong><br>
                     <small class="text-success fw-bold text-uppercase" style="font-size: 0.65rem;">Verified for Receipt</small>
@@ -111,12 +104,12 @@ async function loadExpectedDeliveries() {
             </tr>
         `).join('');
     } catch (err) {
-        deliveryTable.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Registry sync error.</td></tr>`;
+        deliveryTable.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Delivery Registry sync error.</td></tr>`;
     }
 }
 
 async function receiveGoods(procurementId, itemId, quantity) {
-    if (!confirm(`Confirm physical receipt of ${quantity} units?\n\nThis will Finalize PO #${procurementId} and increase system inventory.`)) return;
+    if (!confirm(`Confirm physical receipt of ${quantity} units?`)) return;
 
     try {
         const user = JSON.parse(localStorage.getItem('currentUser'));
@@ -132,15 +125,15 @@ async function receiveGoods(procurementId, itemId, quantity) {
         });
 
         if (response.ok) {
-            alert("Success: Inventory incremented and PO finalized.");
+            alert("Success: Inventory incremented.");
             syncWarehouse();
             loadExpectedDeliveries();
             loadMovementHistory(); 
         } else {
-            alert("Error finalizing receipt. Please check server logs.");
+            alert("Error finalizing receipt.");
         }
     } catch (err) {
-        alert("Connection Failure: Cloud API unreachable.");
+        alert("Connection Failure.");
     }
 }
 
@@ -156,29 +149,21 @@ async function loadMovementHistory() {
         historyTable.innerHTML = movements.reverse().slice(0, 10).map(m => `
             <tr>
                 <td class="small text-muted">${new Date(m.timestamp).toLocaleString('en-GB')}</td>
-                <td><strong>${m.itemDescription || 'Unknown Item'}</strong></td>
+                <td><strong>${m.itemDescription || 'Inventory Update'}</strong></td>
                 <td>
                     <span class="status-pill ${m.movementType === 'IN' ? 'status-approved' : 'status-rejected'}">
                         ${m.movementType}
                     </span>
                 </td>
                 <td class="fw-bold">${m.quantity}</td>
-                <td><code>${m.referenceNumber || 'N/A'}</code></td>
-                <td class="small"><i class="fas fa-user-check me-1"></i> ${m.handledBy}</td>
+                <td><code>${m.referenceNumber || 'REF-LOG'}</code></td>
+                <td class="small">${m.handledBy}</td>
             </tr>
         `).join('');
-
-    } catch (err) {
-        console.error("Audit log error:", err);
-    }
+    } catch (err) { console.error("Audit log error:", err); }
 }
 
-/** --- HELPERS --- **/
 function updateElement(id, val) {
     const el = document.getElementById(id);
     if(el) el.innerText = val;
-}
-
-function formatZMW(amt) {
-    return new Intl.NumberFormat('en-ZM', { style: 'currency', currency: 'ZMW' }).format(amt);
 }
