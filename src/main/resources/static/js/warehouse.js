@@ -18,19 +18,29 @@ function checkSession() {
     }
 
     const user = JSON.parse(userJson);
-    
+    console.log("Current User Object:", user); // This helps us see the structure in F12
+
+    // 1. Set the Full Name
     const nameDisplay = document.getElementById('user-display-name');
     if (nameDisplay) nameDisplay.innerText = user.fullName || "Unknown User";
 
+    // 2. Set the Role Label (Deep Scan)
     const roleDisplay = document.getElementById('user-role-label');
     if (roleDisplay) {
-        const roleName = user.role ? user.role.roleName : "User";
+        // We try: 
+        // A. The nested object (user.role.roleName)
+        // B. The flat field (user.roleName)
+        // C. The ID fallback
+        const roleName = (user.role && user.role.roleName) ? user.role.roleName : 
+                         (user.roleName) ? user.roleName : "Warehouse Operations";
+        
         roleDisplay.innerText = roleName;
     }
 
-    const rid = user.role ? user.role.roleId : user.roleId;
+    // 3. Strict Access Control
+    const rid = (user.role && user.role.roleId) ? user.role.roleId : user.roleId;
     if (![1, 4].includes(rid)) {
-        alert("Access Denied.");
+        alert("Access Denied: You do not have Warehouse Supervisor clearance.");
         window.location.href = 'dashboard.html';
     }
 }
