@@ -66,11 +66,13 @@ async function syncWarehouse() {
 
         const lowStockThreshold = 10;
         const lowStockItems = items.filter(i => (i.stockLevel || 0) <= lowStockThreshold).length;
-        const totalValue = items.reduce((acc, i) => acc + ((i.unitPrice || 0) * (i.stockLevel || 0)), 0);
+        
+        // Fix: Use lastUnitPrice to match your DB column
+        const totalValue = items.reduce((acc, i) => acc + ((i.lastUnitPrice || 0) * (i.stockLevel || 0)), 0);
 
         updateElement('total-sku-count', items.length);
         updateElement('low-stock-count', lowStockItems);
-        updateElement('stock-valuation', formatZMW(totalValue)); // Uses config.js
+        updateElement('stock-valuation', formatZMW(totalValue));
 
         tableBody.innerHTML = items.map(item => {
             const isLow = (item.stockLevel || 0) <= lowStockThreshold;
@@ -79,12 +81,12 @@ async function syncWarehouse() {
             return `
                 <tr>
                     <td>
-                        <div class="fw-bold text-primary">${item.itemDescription || 'Unnamed Item'}</div>
-                        <small class="text-muted">ID: # ${item.itemId}</small>
+                        <div class="fw-bold text-primary">${item.description || 'Unnamed Item'}</div>
+                        <small class="text-muted">Code: ${item.itemCode || 'N/A'}</small>
                     </td>
                     <td><span class="category-pill">${item.category || 'General'}</span></td>
                     <td><span class="fw-bold">${(item.stockLevel || 0).toLocaleString()}</span></td>
-                    <td>${formatZMW(item.unitPrice || 0)}</td>
+                    <td>${formatZMW(item.lastUnitPrice || 0)}</td>
                     <td><span class="status-pill ${statusClass}">${isLow ? 'REORDER' : 'IN STOCK'}</span></td>
                 </tr>
             `;
