@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function checkSession() {
     const userJson = localStorage.getItem('currentUser');
     if (!userJson) {
-        window.location.href = 'index.html';
+        window.location.href = 'login.html';
         return;
     }
 
