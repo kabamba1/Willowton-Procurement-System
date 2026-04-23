@@ -1,6 +1,6 @@
-/** * --- WILLOWTON PROCUREMENT MANAGEMENT SYSTEM --- 
- * Corporate Access Control & User Provisioning (RBAC)
- * Handles account creation, metadata mapping, and permissions.
+/** * --- WILLOWTON PERSONNEL DIRECTORY --- 
+ * Handles Metadata Sync, User Rendering, and Provisioning logic.
+ * Dependency: config.js must be loaded first.
  **/
 
 // Global Cache for Mapping IDs to Human-Readable Names
@@ -8,6 +8,8 @@ let roleMap = {};
 let deptMap = {};
 
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log("Willowton Registry: Initializing...");
+    
     // 1. Sync Corporate Metadata (Required for rendering IDs to Names)
     await loadRolesAndDepts();
     
@@ -37,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
  */
 async function loadRolesAndDepts() {
     try {
+        // API_BASE_URL is inherited from config.js
         const [rolesRes, deptsRes] = await Promise.all([
             fetch(`${API_BASE_URL}/roles`),
             fetch(`${API_BASE_URL}/departments`)
@@ -84,6 +87,7 @@ async function loadUserTable() {
         }
 
         tableBody.innerHTML = users.map(user => {
+            // Map IDs to Names synced in Stage 1
             const roleName = roleMap[user.roleId] || "Guest";
             const deptName = deptMap[user.deptId] || "General Operations";
 
@@ -110,6 +114,7 @@ async function loadUserTable() {
             `;
         }).join('');
     } catch (err) {
+        console.error("Fetch Error:", err);
         tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger p-4">Personnel Registry Offline.</td></tr>';
     }
 }
@@ -126,7 +131,7 @@ async function handleUserSubmit(e) {
     const payload = {
         fullName: document.getElementById('newFullName').value,
         username: document.getElementById('newUsername').value,
-        password: document.getElementById('newPassword').value, // In production, hash this!
+        password: document.getElementById('newPassword').value,
         roleId: parseInt(document.getElementById('roleSelect').value),
         deptId: parseInt(document.getElementById('deptSelect').value)
     };
