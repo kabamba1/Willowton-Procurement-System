@@ -1,55 +1,45 @@
 /** * --- WILLOWTON BUDGET & FISCAL MANAGEMENT --- 
  * Handles monthly limits, spending calculations, and fiscal archiving.
- * Note: config.js and auth-session.js must be loaded before this script.
  **/
 
-/**
- * 1. INITIALIZATION
- */
 document.addEventListener('DOMContentLoaded', () => {
-    initializeBudget();
+    syncBudgetSystem();
 });
 
-async function initializeBudget() {
+/**
+ * 1. CORE SYNC LOGIC
+ */
+async function syncBudgetSystem() {
     const period = getPeriodKey();
     const storageKey = `willowton_budget_${period}`;
     
-    // Get the limit for THIS month specifically
+    // 1. Handle Limit Setup
     let currentLimit = localStorage.getItem(storageKey);
-    
-    // Auto-rollover: If no limit exists for this month, inherit last month's
     if (!currentLimit) {
         currentLimit = localStorage.getItem('last_active_limit') || 500000;
         localStorage.setItem(storageKey, currentLimit);
     }
 
-    // Set the input field value for the manager
     const inputEl = document.getElementById('monthlyLimitInput');
     if (inputEl) inputEl.value = currentLimit;
 
     try {
-        // Points to: https://willowton-pms.onrender.com/api/purchase_orders
+        // 2. Fetch Real Data
         const res = await fetch(`${API_BASE_URL}/purchase_orders`);
         if (!res.ok) throw new Error("Financial data sync failed");
         
         const orders = await res.json();
-        
-        // Calculate Total Spent for the CURRENT calendar month (April 2026)
         const now = new Date();
+
+        // 3. Calculate Actual Spending
         const spentThisMonth = orders.filter(o => {
             const orderDate = new Date(o.createdAt);
-            // Only count Approved or Received orders towards the budget
             return (o.status === 'APPROVED' || o.status === 'RECEIVED') &&
                    orderDate.getMonth() === now.getMonth() &&
                    orderDate.getFullYear() === now.getFullYear();
         }).reduce((sum, o) => sum + (parseFloat(o.totalAmount) || 0), 0);
 
-        // Update Dashboard Stats
-        const budgetEl = document.getElementById('budget-total');
-        if (budgetEl) {
-            budgetEl.textContent = formatZMW(spentThisMonth);
-        }
-
+        // 4. Update UI Components
         updateBudgetUI(spentThisMonth, parseFloat(currentLimit));
         generateFiscalArchive(orders);
 
@@ -63,128 +53,87 @@ async function initializeBudget() {
 }
 
 /**
- * 2. FISCAL ARCHIVE GENERATOR
- * Builds the historical view of spending vs. limits
+ * 2. UI RENDERING
+ */
+function updateBudgetUI(totalUsed, budgetLimit) {
+    const percentage = budgetLimit > 0 ? (totalUsed / budgetLimit) * 100 : 0;
+    const remaining = budgetLimit - totalUsed;
+
+    // Available Spend Remaining
+    const remainingEl = document.getElementById('available-spend'); // Check if your HTML ID is this
+    if (remainingEl) remainingEl.innerText = formatZMW(remaining);
+
+    // Percentage Display
+    const display = document.getElementById('budgetUsedDisplay');
+    if (display) display.innerText = `${percentage.toFixed(1)}%`;
+
+    // Spent vs Limit Labels
+    const spentLabel = document.getElementById('spentLabel');
+    if (spentLabel) spentLabel.innerText = `Spent: ${formatZMW(totalUsed)}`;
+    
+    const limitLabel = document.getElementById('limitLabel');
+    if (limitLabel) limitLabel.innerText = `Limit: ${formatZMW(budgetLimit)}`;
+    
+    // Progress Bar
+    const progressBar = document.getElementById('budgetProgressBar');
+    if (progressBar) {
+        progressBar.style.width = `${Math.min(percentage, 100)}%`;
+        progressBar.style.backgroundColor = percentage > 90 ? '#e11d48' : '#0ea5e9';
+    }
+}
+
+/**
+ * 3. FISCAL ARCHIVE
  */
 function generateFiscalArchive(orders) {
     const archiveBody = document.getElementById('fiscalArchiveBody');
     if (!archiveBody) return;
 
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     
     let html = '';
-    // Start tracking from January 2026
-    let loopYear = 2026;
-    let loopMonth = 0;
-
-    while (loopYear < currentYear || (loopYear === currentYear && loopMonth <= currentMonth)) {
-        const periodKey = `${String(loopMonth + 1).padStart(2, '0')}_${loopYear}`;
+    for (let m = 0; m <= now.getMonth(); m++) {
+        const periodKey = `${String(m + 1).padStart(2, '0')}_2026`;
         const limit = parseFloat(localStorage.getItem(`willowton_budget_${periodKey}`)) || 500000;
         
         const monthSpent = orders.filter(o => {
             const d = new Date(o.createdAt);
             return (o.status === 'APPROVED' || o.status === 'RECEIVED') && 
-                   d.getMonth() === loopMonth && 
-                   d.getFullYear() === loopYear;
+                   d.getMonth() === m && d.getFullYear() === 2026;
         }).reduce((sum, o) => sum + (parseFloat(o.totalAmount) || 0), 0);
 
         const variance = limit - monthSpent;
-        const isCurrent = (loopMonth === currentMonth && loopYear === currentYear);
-        
+        const isCurrent = (m === now.getMonth());
+
         html = `
-            <tr ${isCurrent ? 'class="table-active font-weight-bold"' : ''}>
-                <td>${months[loopMonth]} ${loopYear}</td>
+            <tr ${isCurrent ? 'style="background: #f0f9ff; font-weight: bold;"' : ''}>
+                <td>${months[m]} 2026</td>
                 <td>${formatZMW(limit)}</td>
                 <td>${formatZMW(monthSpent)}</td>
-                <td style="color: ${variance < 0 ? 'var(--danger)' : 'var(--success)'}">
+                <td style="color: ${variance < 0 ? '#e11d48' : '#10b981'}">
                     ${variance < 0 ? '-' : '+'} ${formatZMW(Math.abs(variance))}
                 </td>
-                <td>
-                    <span class="status-pill ${isCurrent ? 'status-pending' : 'status-approved'}">
-                        ${isCurrent ? 'ACTIVE' : 'CLOSED'}
-                    </span>
-                </td>
+                <td><span class="status-pill ${isCurrent ? 'status-pending' : 'status-approved'}">${isCurrent ? 'ACTIVE' : 'CLOSED'}</span></td>
             </tr>
         ` + html;
-
-        loopMonth++;
-        if (loopMonth > 11) {
-            loopMonth = 0;
-            loopYear++;
-        }
     }
     archiveBody.innerHTML = html;
 }
 
-/**
- * 3. DATA ACTIONS
- */
 function saveBudget() {
     const newLimit = document.getElementById('monthlyLimitInput').value;
     const period = getPeriodKey();
-    
-    if (!newLimit || newLimit <= 0) {
-        alert("Please enter a valid fiscal limit.");
-        return;
-    }
+    if (!newLimit || newLimit <= 0) return alert("Enter a valid limit.");
 
-    if (confirm(`Authorize budget of ${formatZMW(newLimit)} for ${period}?`)) {
+    if (confirm(`Authorize budget of ${formatZMW(newLimit)}?`)) {
         localStorage.setItem(`willowton_budget_${period}`, newLimit);
         localStorage.setItem('last_active_limit', newLimit); 
-        alert("Fiscal limit updated.");
         location.reload();
     }
 }
 
-// Utility: Returns "04_2026"
 function getPeriodKey() {
     const d = new Date();
     return `${String(d.getMonth() + 1).padStart(2, '0')}_${d.getFullYear()}`;
 }
-
-/**
- * 4. UI RENDERING
- */
-function initializeBudget() {
-    const period = getPeriodKey();
-    const savedLimit = localStorage.getItem(`willowton_budget_${period}`) || 
-                       localStorage.getItem('last_active_limit') || 
-                       100000; // Default fallback: K100,000
-
-    // Assuming you've fetched your 'totalSpent' from your orders API elsewhere
-    // For now, let's use a placeholder or 0 if not calculated yet
-    const totalSpent = window.currentTotalSpent || 0; 
-
-    updateBudgetUI(totalSpent, savedLimit);
-}
-
-function updateBudgetUI(totalUsed, budgetLimit) {
-    const percentage = budgetLimit > 0 ? (totalUsed / budgetLimit) * 100 : 0;
-    
-    // 1. Update the Big Number (Monthly Budget Used)
-    const display = document.getElementById('budgetUsedDisplay');
-    if (display) {
-        display.innerText = `${percentage.toFixed(1)}%`;
-    }
-
-    // 2. Update the Currency Display (Total Value Pending/Used)
-    const limitDisplay = document.getElementById('currentLimitDisplay');
-    if (limitDisplay) {
-        limitDisplay.innerText = formatZMW(budgetLimit);
-    }
-    
-    // 3. Update a Progress Bar (if you have one in your HTML)
-    const progressBar = document.getElementById('budgetProgressBar');
-    if (progressBar) {
-        progressBar.style.width = `${Math.min(percentage, 100)}%`;
-        // Turn red if over 90%
-        progressBar.style.backgroundColor = percentage > 90 ? '#e11d48' : '#0ea5e9';
-    }
-}
-
-// Ensure this runs when the script loads
-document.addEventListener('DOMContentLoaded', initializeBudget);
