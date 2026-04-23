@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+    
  <nav class="sidebar">
     <h2>Willowton</h2>
     <ul class="nav-links">
@@ -60,13 +61,12 @@ function prepareForExport() {
             <h3 style="margin-bottom: 20px; color: var(--primary);">Expenditure Breakdown by Category</h3>
             <table>
                 <thead>
-                    <tr>
-                        <th>Expense Category</th>
-                        <th>PO Count</th>
-                        <th>Budget Utilization (%)</th>
-                        <th style="text-align: right;">Total Spent (ZMW)</th>
-                    </tr>
-                </thead>
+    <tr>
+        <th class="text-start">Expense Category</th>
+        <th class="text-start">PO Count</th>
+        <th class="text-center" style="width: 30%;">Budget Utilization (%)</th>
+        <th class="text-end">Total Spent (K)</th> </tr>
+</thead>
                 <tbody id="category-report-body">
                     </tbody>
             </table>
