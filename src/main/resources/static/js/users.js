@@ -1,22 +1,12 @@
-/** * --- WILLOWTON PERSONNEL DIRECTORY --- 
- * Handles Metadata Sync, User Rendering, and Provisioning logic.
- * Dependency: config.js must be loaded first.
- **/
-
-// Global Cache for Mapping IDs to Human-Readable Names
+// Willowton Registry Cache
 let roleMap = {};
 let deptMap = {};
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("Willowton Registry: Initializing...");
-    
-    // 1. Sync Corporate Metadata (Required for rendering IDs to Names)
     await loadRolesAndDepts();
-    
-    // 2. Load User Directory
     loadUserTable();
     
-    // 3. Search/Filter Logic
     const searchInput = document.getElementById('userSearch');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
@@ -28,30 +18,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // 4. Form Logic for New Accounts
     const userForm = document.getElementById('createUserForm');
     if (userForm) userForm.addEventListener('submit', handleUserSubmit);
 });
 
-/**
- * 1. METADATA SYNC
- * Populates dropdowns and local maps from the Cloud Registry.
- */
 async function loadRolesAndDepts() {
     try {
-        // API_BASE_URL is inherited from config.js
         const [rolesRes, deptsRes] = await Promise.all([
             fetch(`${API_BASE_URL}/roles`),
             fetch(`${API_BASE_URL}/departments`)
         ]);
-
         const roles = await rolesRes.json();
         const depts = await deptsRes.json();
 
         const roleSelect = document.getElementById('roleSelect');
         const deptSelect = document.getElementById('deptSelect');
 
-        // Clear existing options
         if (roleSelect) roleSelect.innerHTML = '<option value="">-- Assign Corporate Role --</option>';
         if (deptSelect) deptSelect.innerHTML = '<option value="">-- Select Department --</option>';
 
@@ -64,70 +46,39 @@ async function loadRolesAndDepts() {
             deptMap[d.deptId] = d.deptName;
             if (deptSelect) deptSelect.add(new Option(d.deptName, d.deptId));
         });
-        
-    } catch (err) { 
-        console.error("Willowton Personnel Error: Metadata sync failed.", err); 
-    }
+    } catch (err) { console.error("Metadata Sync Failed:", err); }
 }
 
-/**
- * 2. RENDER PERSONNEL DIRECTORY
- */
 async function loadUserTable() {
     const tableBody = document.getElementById('user-table-body');
     if (!tableBody) return;
-
     try {
         const response = await fetch(`${API_BASE_URL}/users`);
         const users = await response.json();
-        
         if (users.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-4">No authorized personnel found.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-4">No personnel found.</td></tr>';
             return;
         }
-
-        tableBody.innerHTML = users.map(user => {
-            // Map IDs to Names synced in Stage 1
-            const roleName = roleMap[user.roleId] || "Guest";
-            const deptName = deptMap[user.deptId] || "General Operations";
-
-            return `
-                <tr>
-                    <td><strong>${user.fullName}</strong></td>
-                    <td><code>${user.username}</code></td>
-                    <td>
-                        <span class="badge bg-light text-primary border px-2 py-1">
-                            ${roleName.toUpperCase()}
-                        </span>
-                    </td>
-                    <td class="small">${deptName}</td>
-                    <td><span class="status-pill status-active text-success small fw-bold">VERIFIED</span></td>
-                    <td class="text-end">
-                        <button class="btn-icon" title="Modify Access" onclick="editUser(${user.userId})">
-                            <i class="fas fa-user-shield"></i>
-                        </button>
-                        <button class="btn-icon text-danger ms-2" title="Deactivate" onclick="deleteUser(${user.userId})">
-                            <i class="fas fa-user-slash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    } catch (err) {
-        console.error("Fetch Error:", err);
-        tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger p-4">Personnel Registry Offline.</td></tr>';
-    }
+        tableBody.innerHTML = users.map(user => `
+            <tr>
+                <td><strong>${user.fullName}</strong></td>
+                <td><code>${user.username}</code></td>
+                <td><span class="badge bg-light text-primary border">${(roleMap[user.roleId] || "Guest").toUpperCase()}</span></td>
+                <td>${deptMap[user.deptId] || "Operations"}</td>
+                <td><span class="status-pill status-active text-success small fw-bold">VERIFIED</span></td>
+                <td class="text-end">
+                    <button class="btn-icon" onclick="editUser(${user.userId})"><i class="fas fa-user-shield"></i></button>
+                    <button class="btn-icon text-danger ms-2" onclick="deleteUser(${user.userId})"><i class="fas fa-user-slash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) { tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Registry Offline.</td></tr>'; }
 }
 
-/**
- * 3. PROVISIONING (CREATE/UPDATE)
- */
 async function handleUserSubmit(e) {
     e.preventDefault();
     const id = document.getElementById('editUserId').value;
     const isEdit = id !== "";
-    const btn = document.getElementById('submitBtn');
-
     const payload = {
         fullName: document.getElementById('newFullName').value,
         username: document.getElementById('newUsername').value,
@@ -135,47 +86,18 @@ async function handleUserSubmit(e) {
         roleId: parseInt(document.getElementById('roleSelect').value),
         deptId: parseInt(document.getElementById('deptSelect').value)
     };
-
     try {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
         const url = isEdit ? `${API_BASE_URL}/users/${id}` : `${API_BASE_URL}/users/register`;
-        const method = isEdit ? 'PUT' : 'POST';
-
         const res = await fetch(url, {
-            method: method,
+            method: isEdit ? 'PUT' : 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-
-        if (res.ok) {
-            alert(isEdit ? "System Access Modified" : "Corporate Account Provisioned");
-            closeUserModal();
-            loadUserTable();
-        } else {
-            alert("Error: Username might be taken or fields are invalid.");
-        }
-    } catch (err) {
-        alert("Network Error: Could not connect to Willowton Cloud.");
-    } finally {
-        btn.disabled = false;
-        btn.textContent = isEdit ? "Update Credentials" : "Provision Account";
-    }
+        if (res.ok) { alert("Success"); closeUserModal(); loadUserTable(); }
+    } catch (err) { alert("Network Error"); }
 }
 
-/**
- * 4. ACCESS MANAGEMENT HELPERS
- */
-async function deleteUser(id) {
-    if (confirm("Deactivate this account? This will immediately revoke all system permissions for this staff member.")) {
-        try {
-            const res = await fetch(`${API_BASE_URL}/users/${id}`, { method: 'DELETE' });
-            if (res.ok) loadUserTable();
-        } catch (err) { alert("Network Error."); }
-    }
-}
-
+// ACCESS HELPERS
 function openUserModal() { document.getElementById('userModal').style.display = 'flex'; }
 function closeUserModal() { 
     document.getElementById('userModal').style.display = 'none'; 
@@ -183,35 +105,29 @@ function closeUserModal() {
     document.getElementById('editUserId').value = "";
 }
 
-/**
- * 5. EDIT USER LOGIC
- * Pulls existing data into the modal for modification.
- */
 async function editUser(id) {
     try {
         const res = await fetch(`${API_BASE_URL}/users/${id}`);
         const user = await res.json();
-
-        // 1. Fill the hidden ID field
         document.getElementById('editUserId').value = user.userId;
-        
-        // 2. Populate the form fields
         document.getElementById('newFullName').value = user.fullName;
         document.getElementById('newUsername').value = user.username;
         document.getElementById('roleSelect').value = user.roleId;
         document.getElementById('deptSelect').value = user.deptId;
-        
-        // Note: We leave the password field blank for security during edits
-        document.getElementById('newPassword').placeholder = "Enter new password to change";
-
-        // 3. Update UI and Open Modal
         document.getElementById('submitBtn').textContent = "Update Credentials";
         openUserModal();
-        
-    } catch (err) {
-        alert("Error fetching user details for edit.");
+    } catch (err) { alert("Fetch failed"); }
+}
+
+async function deleteUser(id) {
+    if (confirm("Deactivate account?")) {
+        await fetch(`${API_BASE_URL}/users/${id}`, { method: 'DELETE' });
+        loadUserTable();
     }
 }
 
-// CRITICAL: Expose it to the global window so HTML onclick can see it
+// EXPOSE TO GLOBAL SCOPE
 window.editUser = editUser;
+window.deleteUser = deleteUser;
+window.openUserModal = openUserModal;
+window.closeUserModal = closeUserModal;
