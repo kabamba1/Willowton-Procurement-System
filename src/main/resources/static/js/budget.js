@@ -145,3 +145,46 @@ function getPeriodKey() {
     const d = new Date();
     return `${String(d.getMonth() + 1).padStart(2, '0')}_${d.getFullYear()}`;
 }
+
+/**
+ * 4. UI RENDERING
+ */
+function initializeBudget() {
+    const period = getPeriodKey();
+    const savedLimit = localStorage.getItem(`willowton_budget_${period}`) || 
+                       localStorage.getItem('last_active_limit') || 
+                       100000; // Default fallback: K100,000
+
+    // Assuming you've fetched your 'totalSpent' from your orders API elsewhere
+    // For now, let's use a placeholder or 0 if not calculated yet
+    const totalSpent = window.currentTotalSpent || 0; 
+
+    updateBudgetUI(totalSpent, savedLimit);
+}
+
+function updateBudgetUI(totalUsed, budgetLimit) {
+    const percentage = budgetLimit > 0 ? (totalUsed / budgetLimit) * 100 : 0;
+    
+    // 1. Update the Big Number (Monthly Budget Used)
+    const display = document.getElementById('budgetUsedDisplay');
+    if (display) {
+        display.innerText = `${percentage.toFixed(1)}%`;
+    }
+
+    // 2. Update the Currency Display (Total Value Pending/Used)
+    const limitDisplay = document.getElementById('currentLimitDisplay');
+    if (limitDisplay) {
+        limitDisplay.innerText = formatZMW(budgetLimit);
+    }
+    
+    // 3. Update a Progress Bar (if you have one in your HTML)
+    const progressBar = document.getElementById('budgetProgressBar');
+    if (progressBar) {
+        progressBar.style.width = `${Math.min(percentage, 100)}%`;
+        // Turn red if over 90%
+        progressBar.style.backgroundColor = percentage > 90 ? '#e11d48' : '#0ea5e9';
+    }
+}
+
+// Ensure this runs when the script loads
+document.addEventListener('DOMContentLoaded', initializeBudget);
