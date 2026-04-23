@@ -87,20 +87,28 @@ function renderCategoryTable(categories, grandTotal) {
         const percentage = grandTotal > 0 ? ((data.total / grandTotal) * 100).toFixed(1) : 0;
         
         return `
-            <tr>
-                <td class="text-start"><strong>${name}</strong></td>
-                <td class="text-start text-muted">${data.count} Orders</td>
-                <td class="text-center">
-                    <div class="d-flex align-items-center justify-content-center">
-                        <div class="progress w-100" style="height: 8px; max-width: 150px;">
-                            <div class="progress-bar bg-primary" role="progressbar" style="width: ${percentage}%"></div>
-                        </div>
-                        <span class="ms-2 small fw-bold">${percentage}%</span>
+    <tr class="align-middle">
+        <td class="ps-4">
+            <span class="fw-bold text-dark">${name}</span>
+        </td>
+        <td class="text-muted">${data.count} Orders</td>
+        <td>
+            <div class="row align-items-center g-0">
+                <div class="col">
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: ${percentage}%"></div>
                     </div>
-                </td>
-                <td class="text-end fw-bold text-dark">${formatZMW(data.total)}</td>
-            </tr>
-        `;
+                </div>
+                <div class="col-auto ps-3">
+                    <span class="small fw-bold text-primary">${percentage}%</span>
+                </div>
+            </div>
+        </td>
+        <td class="text-end pe-4">
+            <span class="fw-bold">${formatZMW(data.total)}</span>
+        </td>
+    </tr>
+`;
     }).join('');
 
 }
