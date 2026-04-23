@@ -82,31 +82,27 @@ function renderCategoryTable(categories, grandTotal) {
 
     const catKeys = Object.keys(categories);
     
-    if (catKeys.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No financial data available for the selected period.</td></tr>';
-        return;
-    }
-
     tbody.innerHTML = catKeys.map(name => {
         const data = categories[name];
         const percentage = grandTotal > 0 ? ((data.total / grandTotal) * 100).toFixed(1) : 0;
         
         return `
-    <tr>
-        <td class="text-start"><strong>${name}</strong></td>
-        <td class="text-start">${data.count} Orders</td>
-        <td class="text-center">
-            <div class="d-flex align-items-center justify-content-center">
-                <div class="progress w-75" style="height: 8px; margin-right: 10px;">
-                    <div class="progress-bar bg-accent" role="progressbar" style="width: ${percentage}%"></div>
-                </div>
-                <small class="text-muted">${percentage}%</small>
-            </div>
-        </td>
-        <td class="text-end fw-bold">${formatZMW(data.total)}</td>
-    </tr>
-`;
+            <tr>
+                <td class="text-start"><strong>${name}</strong></td>
+                <td class="text-start text-muted">${data.count} Orders</td>
+                <td class="text-center">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div class="progress w-100" style="height: 8px; max-width: 150px;">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: ${percentage}%"></div>
+                        </div>
+                        <span class="ms-2 small fw-bold">${percentage}%</span>
+                    </div>
+                </td>
+                <td class="text-end fw-bold text-dark">${formatZMW(data.total)}</td>
+            </tr>
+        `;
     }).join('');
+
 }
 
 function updateValue(id, value) {
