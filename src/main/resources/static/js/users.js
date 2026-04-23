@@ -182,3 +182,36 @@ function closeUserModal() {
     document.getElementById('createUserForm').reset();
     document.getElementById('editUserId').value = "";
 }
+
+/**
+ * 5. EDIT USER LOGIC
+ * Pulls existing data into the modal for modification.
+ */
+async function editUser(id) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/users/${id}`);
+        const user = await res.json();
+
+        // 1. Fill the hidden ID field
+        document.getElementById('editUserId').value = user.userId;
+        
+        // 2. Populate the form fields
+        document.getElementById('newFullName').value = user.fullName;
+        document.getElementById('newUsername').value = user.username;
+        document.getElementById('roleSelect').value = user.roleId;
+        document.getElementById('deptSelect').value = user.deptId;
+        
+        // Note: We leave the password field blank for security during edits
+        document.getElementById('newPassword').placeholder = "Enter new password to change";
+
+        // 3. Update UI and Open Modal
+        document.getElementById('submitBtn').textContent = "Update Credentials";
+        openUserModal();
+        
+    } catch (err) {
+        alert("Error fetching user details for edit.");
+    }
+}
+
+// CRITICAL: Expose it to the global window so HTML onclick can see it
+window.editUser = editUser;
