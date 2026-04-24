@@ -6,7 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     checkSession();
     syncWarehouse();           
     loadExpectedDeliveries();  
-    loadMovementHistory();     
+    loadMovementHistory();
+    
+    const searchInput = document.getElementById('inventorySearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', filterInventory);
+    }
 });
 
 /** --- 1. ACCESS CONTROL & SESSION --- **/
@@ -198,4 +203,16 @@ function logout() {
         // Redirect
         window.location.href = 'login.html';
     }
+}
+
+/** --- 6. SEARCH FILTER --- **/
+function filterInventory() {
+    const query = document.getElementById('inventorySearch').value.toLowerCase();
+    const rows = document.querySelectorAll('#inventory-table-body tr');
+
+    rows.forEach(row => {
+        // This checks the text in the whole row against your search query
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+    });
 }
