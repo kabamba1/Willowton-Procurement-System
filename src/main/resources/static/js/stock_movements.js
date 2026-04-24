@@ -10,6 +10,42 @@ document.addEventListener('DOMContentLoaded', () => {
     loadMovementHistory(); 
 });
 
+function checkSession() {
+    const userJson = localStorage.getItem('currentUser');
+    
+    // If no one is logged in, kick them to login page
+    if (!userJson) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    const user = JSON.parse(userJson);
+    
+    // Pull the name directly from the logged-in user object
+    const nameDisplay = document.getElementById('user-display-name');
+    if (nameDisplay) {
+        // Use user.fullName (the name from your DB). 
+        // Fallback to "Unknown User" only if the database record is empty.
+        nameDisplay.innerText = user.fullName || "Unknown User";
+    }
+
+    // Pull the role dynamically
+    const roleDisplay = document.getElementById('user-role-label');
+    if (roleDisplay) {
+        // This maps the role ID from the database to a readable title
+        const roleMap = {
+            1: "System Admin",
+            2: "Finance Manager",
+            3: "Procurement Officer",
+            4: "Warehouse Supervisor"
+        };
+        
+        // Use the ID from the logged-in user to find their title
+        const rid = user.roleId || (user.role ? user.role.roleId : null);
+        roleDisplay.innerText = roleMap[rid] || "Staff Member";
+    }
+}
+
 /**
  * 1. FETCH & RENDER MOVEMENT LEDGER
  * Aggregates all stock "IN" (Receiving) and "OUT" (Dispatch/Usage) events.

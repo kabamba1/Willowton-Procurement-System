@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
 /** --- 1. ACCESS CONTROL & SESSION --- **/
 function checkSession() {
     const userJson = localStorage.getItem('currentUser');
+    
+    // If no one is logged in, kick them to login page
     if (!userJson) {
         window.location.href = 'login.html';
         return;
@@ -19,38 +21,28 @@ function checkSession() {
 
     const user = JSON.parse(userJson);
     
-    // 1. Set the Full Name
+    // Pull the name directly from the logged-in user object
     const nameDisplay = document.getElementById('user-display-name');
-    if (nameDisplay) nameDisplay.innerText = user.fullName || "Enock Silavwe";
-
-    // 2. Set the Role Label (Advanced Mapping)
-    const roleDisplay = document.getElementById('user-role-label');
-    if (roleDisplay) {
-        let roleTitle = "User";
-
-        if (user.role && user.role.roleName) {
-            // Case A: Role is a nested object from Spring Boot
-            roleTitle = user.role.roleName;
-        } else {
-            // Case B: Role is just an ID number (Mapping manual check)
-            const rid = user.roleId || (user.role ? user.role : null);
-            const roleMap = {
-                1: "System Admin",
-                2: "Finance Manager",
-                3: "Procurement Officer",
-                4: "Warehouse Supervisor"
-            };
-            roleTitle = roleMap[rid] || "Warehouse Supervisor";
-        }
-        
-        roleDisplay.innerText = roleTitle;
+    if (nameDisplay) {
+        // Use user.fullName (the name from your DB). 
+        // Fallback to "Unknown User" only if the database record is empty.
+        nameDisplay.innerText = user.fullName || "Unknown User";
     }
 
-    // 3. Access Control (Admin or Supervisor)
-    const accessId = user.roleId || (user.role && user.role.roleId ? user.role.roleId : user.role);
-    if (![1, 4].includes(Number(accessId))) {
-        alert("Access Denied: Warehouse Supervisor clearance required.");
-        window.location.href = 'dashboard.html';
+    // Pull the role dynamically
+    const roleDisplay = document.getElementById('user-role-label');
+    if (roleDisplay) {
+        // This maps the role ID from the database to a readable title
+        const roleMap = {
+            1: "System Admin",
+            2: "Finance Manager",
+            3: "Procurement Officer",
+            4: "Warehouse Supervisor"
+        };
+        
+        // Use the ID from the logged-in user to find their title
+        const rid = user.roleId || (user.role ? user.role.roleId : null);
+        roleDisplay.innerText = roleMap[rid] || "Staff Member";
     }
 }
 /** --- 2. STOCK CATALOG & METRICS --- **/
