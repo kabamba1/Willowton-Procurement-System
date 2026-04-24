@@ -465,3 +465,11 @@ select {
 select option {
     text-transform: capitalize; /* Turns 'FINANCE_MANAGER' into 'Finance_manager' */
 }
+.search-box::before, 
+.search-box i {
+    display: none !important;
+}
+
+#inventorySearch {
+    padding-left: 12px !important; /* Forces text to start at a normal position */
+}
