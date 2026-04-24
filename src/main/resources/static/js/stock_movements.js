@@ -1,19 +1,22 @@
 /** * --- WILLOWTON WAREHOUSE AUDIT & MOVEMENT LOGIC --- 
  * Provides a read-only historical ledger of physical stock changes.
- * Dependencies: config.js and auth-session.js must be loaded first.
  **/
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Shared display logic from auth-session.js
-    if (typeof displayUserName === 'function') displayUserName();
+    // 1. Run the session check first to fill the header
+    checkSession();
     
+    // 2. Load the data
     loadMovementHistory(); 
 });
 
+/**
+ * 1. SECURITY & SESSION MANAGEMENT
+ * Pulls the real name and role from the database via localStorage
+ */
 function checkSession() {
     const userJson = localStorage.getItem('currentUser');
     
-    // If no one is logged in, kick them to login page
     if (!userJson) {
         window.location.href = 'login.html';
         return;
@@ -21,18 +24,15 @@ function checkSession() {
 
     const user = JSON.parse(userJson);
     
-    // Pull the name directly from the logged-in user object
+    // Set the User Name (No longer hardcoded)
     const nameDisplay = document.getElementById('user-display-name');
     if (nameDisplay) {
-        // Use user.fullName (the name from your DB). 
-        // Fallback to "Unknown User" only if the database record is empty.
         nameDisplay.innerText = user.fullName || "Unknown User";
     }
 
-    // Pull the role dynamically
+    // Set the Role Label dynamically
     const roleDisplay = document.getElementById('user-role-label');
     if (roleDisplay) {
-        // This maps the role ID from the database to a readable title
         const roleMap = {
             1: "System Admin",
             2: "Finance Manager",
@@ -40,44 +40,38 @@ function checkSession() {
             4: "Warehouse Supervisor"
         };
         
-        // Use the ID from the logged-in user to find their title
         const rid = user.roleId || (user.role ? user.role.roleId : null);
         roleDisplay.innerText = roleMap[rid] || "Staff Member";
     }
 }
 
 /**
- * 1. FETCH & RENDER MOVEMENT LEDGER
- * Aggregates all stock "IN" (Receiving) and "OUT" (Dispatch/Usage) events.
+ * 2. FETCH & RENDER MOVEMENT LEDGER
  */
 async function loadMovementHistory() {
     const historyTable = document.getElementById('movements-table-body');
     if (!historyTable) return;
 
     try {
-        // Pointing to the specific warehouse movement endpoint
         const res = await fetch(`${API_BASE_URL}/warehouse/movements`); 
         if (!res.ok) throw new Error("Registry Sync Failed");
         
         const movements = await res.json();
 
         if (!movements || movements.length === 0) {
-            historyTable.innerHTML = `<tr><td colspan="6" class="text-center p-4">No movement history found in the Willowton registry.</td></tr>`;
+            historyTable.innerHTML = `<tr><td colspan="6" class="text-center p-4">No movement history found.</td></tr>`;
             return;
         }
 
-        // Show latest movements at the top (Audit Trail Standard)
         historyTable.innerHTML = movements.reverse().map(m => {
-            // Flexible mapping for robust DB integration
-            const displayItem = m.item_description || m.itemDescription || m.itemName || "Unknown SKU";
-            const displayType = (m.movement_type || m.movementType || m.type || "IN").toUpperCase();
+            const displayItem = m.description || m.itemDescription || "Unknown SKU";
+            const displayType = (m.movementType || "IN").toUpperCase();
             const displayQty  = m.quantity || 0;
-            const displayRef  = m.reference_number || m.referenceNumber || m.reference || "N/A";
-            const displayUser = m.handled_by || m.handledBy || m.userName || "System Admin";
+            const displayRef  = m.referenceNumber || "N/A";
+            const displayUser = m.handledBy || "System";
             const displayDate = m.timestamp ? new Date(m.timestamp).toLocaleString('en-GB') : "Recently";
 
-            // Logic to color-code the movement direction
-            const typeClass = displayType === 'IN' ? 'status-active' : 'status-inactive';
+            const typeClass = displayType === 'IN' ? 'status-approved' : 'status-rejected';
             const iconClass = displayType === 'IN' ? 'fa-arrow-down-long text-success' : 'fa-arrow-up-long text-danger';
 
             return `
@@ -102,23 +96,14 @@ async function loadMovementHistory() {
         }).join('');
 
     } catch (err) {
-        console.error("Audit Log Sync Error:", err);
-        historyTable.innerHTML = `
-            <tr>
-                <td colspan="6" class="text-center text-danger p-4">
-                    <i class="fas fa-link-slash mb-2 d-block"></i>
-                    Cloud Registry Offline. Verify Willowton Render instance status.
-                </td>
-            </tr>`;
+        console.error("Audit Log Error:", err);
+        historyTable.innerHTML = `<tr><td colspan="6" class="text-center text-danger p-4">Registry Offline.</td></tr>`;
     }
 }
 
-/**
- * 2. SECURITY & SESSION MANAGEMENT
- */
 function logout() {
     if (confirm("Confirm sign-out from Willowton Warehouse Portal?")) {
-        localStorage.removeItem('currentUser');
-        window.location.href = 'index.html';
+        localStorage.clear(); // Clears all user data
+        window.location.href = 'login.html';
     }
 }
