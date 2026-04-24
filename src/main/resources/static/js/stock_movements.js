@@ -100,10 +100,3 @@ async function loadMovementHistory() {
         historyTable.innerHTML = `<tr><td colspan="6" class="text-center text-danger p-4">Registry Offline.</td></tr>`;
     }
 }
-
-function logout() {
-    if (confirm("Confirm sign-out from Willowton Warehouse Portal?")) {
-        localStorage.clear(); // Clears all user data
-        window.location.href = 'login.html';
-    }
-}
