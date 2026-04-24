@@ -104,29 +104,29 @@ async function loadExpectedDeliveries() {
             return;
         }
 
-        deliveryTable.innerHTML = orders.map(order => `
-            <tr>
-                <td><code class="fw-bold">${order.poNumber || 'PO-NEW'}</code></td>
-                <td>
-                    <strong>${order.itemName}</strong><br>
-                    <small class="text-success fw-bold text-uppercase" style="font-size: 0.65rem;">Verified for Receipt</small>
-                </td>
-                <td class="fw-bold">${order.quantity}</td>
-                <td class="small">${order.supplierName}</td>
-                <td>
-                    <button class="btn btn-sm btn-primary px-3" onclick="receiveGoods(${order.id}, ${order.itemId}, ${order.quantity})">
-                        <i class="fas fa-truck-loading me-1"></i> Receive
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+deliveryTable.innerHTML = orders.map(order => `
+    <tr>
+        <td><code class="fw-bold">${order.poNumber || 'PO-NEW'}</code></td>
+        <td>
+            <strong>${order.itemName}</strong><br>
+            <small class="text-success fw-bold text-uppercase" style="font-size: 0.65rem;">Verified for Receipt</small>
+        </td>
+        <td class="fw-bold">${order.quantity}</td>
+        <td class="small">${order.supplierName}</td>
+        <td>
+            <button class="btn btn-sm btn-primary px-3" onclick="receiveGoods(${order.id}, ${order.itemId}, ${order.quantity}, '${order.poNumber}')">
+                <i class="fas fa-truck-loading me-1"></i> Receive
+            </button>
+        </td>
+    </tr>
+`).join('');
     } catch (err) {
         deliveryTable.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Delivery Registry sync error.</td></tr>`;
     }
 }
 
-async function receiveGoods(procurementId, itemId, quantity) {
-    if (!confirm(`Confirm physical receipt of ${quantity} units?`)) return;
+async function receiveGoods(procurementId, itemId, quantity, poNumber) {
+    if (!confirm(`Confirm physical receipt of ${quantity} units for ${poNumber}?`)) return;
 
     try {
         const user = JSON.parse(localStorage.getItem('currentUser'));
@@ -137,15 +137,16 @@ async function receiveGoods(procurementId, itemId, quantity) {
                 procurementId: procurementId,
                 itemId: itemId,
                 receivedQuantity: quantity,
-                receivedBy: user.fullName
+                receivedBy: user.fullName,
+                referenceNumber: poNumber 
             })
         });
 
         if (response.ok) {
-            alert("Success: Inventory incremented.");
+            alert(`Success: ${poNumber} recorded in audit log.`);
             syncWarehouse();
             loadExpectedDeliveries();
-            loadMovementHistory(); 
+            if (typeof loadMovementHistory === 'function') loadMovementHistory(); 
         } else {
             alert("Error finalizing receipt.");
         }
@@ -153,7 +154,6 @@ async function receiveGoods(procurementId, itemId, quantity) {
         alert("Connection Failure.");
     }
 }
-
 /** --- 4. AUDIT LOG --- **/
 async function loadMovementHistory() {
     const historyTable = document.getElementById('movement-history-body');
